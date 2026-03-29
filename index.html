@@ -140,10 +140,10 @@
     <h1>🌟 Yuli's Universe 🌟</h1>
     <p class="subtitle">Inspired by Yuli's beautiful city painting ✨</p>
     <div class="instructions">
-      <span>Move:</span> Arrow Keys or WASD<br/>
-      <span>Jump:</span> ↑ / W / Space<br/>
+      <span>Forward / Back:</span> ↑ ↓ or W S<br/>
+      <span>Left / Right:</span> ←→ or A D<br/>
       <span>Collect</span> all the ⭐ stars!<br/>
-      The world is big — go explore! 🏙️
+      Walk deep into Yuli's city! 🏙️
     </div>
     <button id="playBtn">▶ Play!</button>
   </div>
@@ -160,12 +160,17 @@ const startScreen = document.getElementById("startScreen");
 const loadingScreen = document.getElementById("loadingScreen");
 const scoreDisplay = document.getElementById("scoreDisplay");
 
+// Painting native aspect ratio (will be updated once image loads).
+// These defaults reflect the known painting dimensions used as a fallback.
+const DEFAULT_PAINTING_W = 4096;
+const DEFAULT_PAINTING_H = 3060;
+let paintingRatio = DEFAULT_PAINTING_W / DEFAULT_PAINTING_H;
+
 function resize() {
-  const maxW = Math.min(window.innerWidth - 16, 900);
-  const maxH = Math.min(window.innerHeight - 16, 550);
-  const ratio = 900 / 550;
-  let w = maxW, h = maxW / ratio;
-  if (h > maxH) { h = maxH; w = h * ratio; }
+  const maxW = window.innerWidth - 16;
+  const maxH = window.innerHeight - 16;
+  let w = maxW, h = w / paintingRatio;
+  if (h > maxH) { h = maxH; w = h * paintingRatio; }
   canvas.width = Math.floor(w);
   canvas.height = Math.floor(h);
   canvas.style.width = canvas.width + "px";
@@ -179,53 +184,102 @@ const bgImg = new Image();
 let bgLoaded = false;
 bgImg.onload = function() {
   bgLoaded = true;
+  paintingRatio = bgImg.naturalWidth / bgImg.naturalHeight;
+  resize(); // re-fit canvas to actual image ratio
   loadingScreen.style.display = "none";
   startScreen.style.display = "flex";
 };
 bgImg.onerror = function() {
-  // Fallback: hide loading screen even if image fails
   loadingScreen.style.display = "none";
   startScreen.style.display = "flex";
 };
 bgImg.src = "background.png";
 
-// ─── Constants ───────────────────────────────────────────────────────────────
-const WORLD_W = 3200;
-const GROUND_Y_FRAC = 0.83; // avatar ground at 83% of canvas height (painting street ~bottom 17%)
+// ─── Perspective Constants ────────────────────────────────────────────────────
+// z = 0 → near viewer (bottom of street), z = 1 → far horizon (top of street)
+const HORIZON_Y_FRAC  = 0.60; // screen Y fraction where the vanishing point sits
+const STREET_BTM_FRAC = 0.97; // screen Y fraction at the very bottom of the street
 
-function groundY() { return canvas.height * GROUND_Y_FRAC; }
+// Left/right street bounds (as fraction of canvas width) at near and far
+const STR_L_NEAR = 0.08;
+const STR_R_NEAR = 0.92;
+const STR_L_FAR  = 0.38;
+const STR_R_FAR  = 0.62;
 
-// Stars (collectibles)
+// Avatar base height (pixels) at z = 0 (nearest)
+const AVATAR_BASE_H    = 72;
+const AVATAR_BASE_W    = 28;   // used for aspect ratio only
+const AVATAR_MIN_SCALE = 0.13; // scale factor at z = 1 (horizon)
+
+// Walkable depth/lateral limits (avatar cannot leave the visible street area)
+const MIN_DEPTH    = 0.02; // nearest allowed z (just off the bottom edge)
+const MAX_DEPTH    = 0.90; // farthest allowed z (short of the horizon)
+const MIN_LATERAL  = 0.04; // leftmost allowed xFrac (small margin from kerb)
+const MAX_LATERAL  = 0.96; // rightmost allowed xFrac
+
+// Movement speeds (in perspective-space units per frame)
+const DEPTH_SPEED   = 0.016; // how fast z changes
+const LATERAL_SPEED = 0.018; // how fast xFrac changes
+const FRICTION      = 0.80;
+
+// ─── Perspective Helpers ──────────────────────────────────────────────────────
+function getScale(z) {
+  // Inverse-proportion perspective scale: returns 1.0 at z=0 (near) and
+  // AVATAR_MIN_SCALE at z=1 (horizon), following a 1/(1+K·z) falloff that
+  // matches how objects shrink in a real perspective projection.
+  return 1.0 / (1.0 + z * (1.0 / AVATAR_MIN_SCALE - 1.0));
+}
+
+function getScreenPos(z, xFrac) {
+  const horizY  = HORIZON_Y_FRAC  * canvas.height;
+  const bottomY = STREET_BTM_FRAC * canvas.height;
+  const screenY = horizY + (bottomY - horizY) * (1.0 - z);
+
+  const leftBound  = (STR_L_NEAR + (STR_L_FAR - STR_L_NEAR) * z) * canvas.width;
+  const rightBound = (STR_R_NEAR + (STR_R_FAR - STR_R_NEAR) * z) * canvas.width;
+  const screenX    = leftBound + (rightBound - leftBound) * xFrac;
+
+  return { x: screenX, y: screenY };
+}
+
+// ─── Stars (collectibles) ─────────────────────────────────────────────────────
 const starData = [];
 function genStars() {
   starData.length = 0;
   const positions = [
-    {x:200,  y:0.92},{x:450,  y:0.75},{x:580,  y:0.85},
-    {x:750,  y:0.62},{x:900,  y:0.88},{x:1050, y:0.70},
-    {x:1200, y:0.80},{x:1350, y:0.65},{x:1500, y:0.90},
-    {x:1650, y:0.72},{x:1800, y:0.62},{x:1950, y:0.83},
-    {x:2100, y:0.75},{x:2250, y:0.67},{x:2400, y:0.88},
-    {x:2550, y:0.60},{x:2700, y:0.78},{x:2850, y:0.65},
-    {x:3000, y:0.85},{x:3100, y:0.72}
+    {z:0.12, xFrac:0.30}, {z:0.12, xFrac:0.70},
+    {z:0.22, xFrac:0.25}, {z:0.22, xFrac:0.75},
+    {z:0.22, xFrac:0.50},
+    {z:0.32, xFrac:0.35}, {z:0.32, xFrac:0.65},
+    {z:0.42, xFrac:0.40}, {z:0.42, xFrac:0.60},
+    {z:0.50, xFrac:0.50},
+    {z:0.52, xFrac:0.32}, {z:0.52, xFrac:0.68},
+    {z:0.62, xFrac:0.42}, {z:0.62, xFrac:0.58},
+    {z:0.70, xFrac:0.50},
+    {z:0.72, xFrac:0.44}, {z:0.72, xFrac:0.56},
+    {z:0.80, xFrac:0.47}, {z:0.80, xFrac:0.53},
+    {z:0.86, xFrac:0.50}
   ];
   for (const p of positions) {
-    starData.push({ x: p.x, yFrac: p.y, collected: false, angle: Math.random() * Math.PI * 2, pulse: Math.random() * Math.PI * 2 });
+    starData.push({
+      z: p.z, xFrac: p.xFrac,
+      collected: false,
+      angle: Math.random() * Math.PI * 2,
+      pulse: Math.random() * Math.PI * 2
+    });
   }
 }
 genStars();
 
-// Particles
+// ─── Particles ────────────────────────────────────────────────────────────────
 const particles = [];
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 const avatar = {
-  x: 200,
-  y: 0,
-  w: 28,
-  h: 44,
-  vx: 0,
-  vy: 0,
-  onGround: false,
+  z: 0.15,      // depth: 0 = near viewer, 1 = at horizon
+  xFrac: 0.50,  // horizontal position within street bounds (0 = left, 1 = right)
+  vz: 0,        // velocity in depth direction
+  vx: 0,        // velocity in xFrac direction
   facingRight: true,
   walkFrame: 0,
   walkTimer: 0,
@@ -235,22 +289,17 @@ const avatar = {
   wasMoving: false
 };
 
-// ─── Camera ───────────────────────────────────────────────────────────────────
-let camX = 0;
-
 // ─── Input ────────────────────────────────────────────────────────────────────
 const keys = {};
 window.addEventListener("keydown", e => {
   keys[e.code] = true;
-  // Prevent page scroll
-  if (["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.code)) e.preventDefault();
+  if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.code)) e.preventDefault();
 });
 window.addEventListener("keyup", e => { keys[e.code] = false; });
 
 // ─── Game State ───────────────────────────────────────────────────────────────
 let gameRunning = false;
 let score = 0;
-let totalTime = 0;
 
 document.getElementById("playBtn").addEventListener("click", startGame);
 
@@ -258,121 +307,100 @@ function startGame() {
   startScreen.style.display = "none";
   gameRunning = true;
   score = 0;
-  avatar.x = 200;
-  avatar.y = groundY() - avatar.h;
-  avatar.vx = 0; avatar.vy = 0;
-  camX = 0;
+  avatar.z    = 0.15;
+  avatar.xFrac = 0.50;
+  avatar.vz   = 0;
+  avatar.vx   = 0;
   genStars();
   particles.length = 0;
   scoreDisplay.textContent = "⭐ 0";
   requestAnimationFrame(gameLoop);
 }
 
-// ─── Physics ──────────────────────────────────────────────────────────────────
-const GRAVITY = 0.55;
-const JUMP_VEL = -13;
-const MOVE_SPEED = 3.8;
-const FRICTION = 0.82;
-
-function updateAvatar(dt) {
-  const gY = groundY();
-
-  // Horizontal movement
+// ─── Avatar Update ────────────────────────────────────────────────────────────
+function updateAvatar() {
   const movingLeft  = keys["ArrowLeft"]  || keys["KeyA"];
   const movingRight = keys["ArrowRight"] || keys["KeyD"];
-  const jumping     = keys["ArrowUp"]    || keys["KeyW"] || keys["Space"];
+  const movingFwd   = keys["ArrowUp"]    || keys["KeyW"];
+  const movingBack  = keys["ArrowDown"]  || keys["KeyS"];
 
-  if (movingLeft)  { avatar.vx -= MOVE_SPEED * 0.35; avatar.facingRight = false; }
-  if (movingRight) { avatar.vx += MOVE_SPEED * 0.35; avatar.facingRight = true;  }
+  if (movingFwd)   avatar.vz += DEPTH_SPEED * 0.4;
+  if (movingBack)  avatar.vz -= DEPTH_SPEED * 0.4;
+  if (movingLeft)  { avatar.vx -= LATERAL_SPEED * 0.4; avatar.facingRight = false; }
+  if (movingRight) { avatar.vx += LATERAL_SPEED * 0.4; avatar.facingRight = true;  }
 
+  avatar.vz *= FRICTION;
   avatar.vx *= FRICTION;
-  if (Math.abs(avatar.vx) < 0.05) avatar.vx = 0;
+  if (Math.abs(avatar.vz) < 0.0003) avatar.vz = 0;
+  if (Math.abs(avatar.vx) < 0.0003) avatar.vx = 0;
 
-  // Jump
-  if (jumping && avatar.onGround) {
-    avatar.vy = JUMP_VEL;
-    avatar.onGround = false;
-  }
+  avatar.z    += avatar.vz;
+  avatar.xFrac += avatar.vx;
 
-  // Gravity
-  avatar.vy += GRAVITY;
-  if (avatar.vy > 18) avatar.vy = 18;
+  // Clamp depth — stay on the street (not past the horizon)
+  if (avatar.z < MIN_DEPTH) { avatar.z = MIN_DEPTH; avatar.vz = 0; }
+  if (avatar.z > MAX_DEPTH) { avatar.z = MAX_DEPTH; avatar.vz = 0; }
 
-  avatar.x += avatar.vx;
-  avatar.y += avatar.vy;
+  // Clamp lateral — stay within street bounds
+  if (avatar.xFrac < MIN_LATERAL) { avatar.xFrac = MIN_LATERAL; avatar.vx = 0; }
+  if (avatar.xFrac > MAX_LATERAL) { avatar.xFrac = MAX_LATERAL; avatar.vx = 0; }
 
-  // Clamp to world
-  if (avatar.x < 0) { avatar.x = 0; avatar.vx = 0; }
-  if (avatar.x + avatar.w > WORLD_W) { avatar.x = WORLD_W - avatar.w; avatar.vx = 0; }
-
-  // Ground collision
-  if (avatar.y + avatar.h >= gY) {
-    avatar.y = gY - avatar.h;
-    avatar.vy = 0;
-    avatar.onGround = true;
-  } else {
-    avatar.onGround = false;
-  }
+  const isMoving = movingLeft || movingRight || movingFwd || movingBack;
 
   // Walk animation
-  const isMoving = (movingLeft || movingRight) && avatar.onGround;
   avatar.walkTimer += isMoving ? 1 : 0;
   if (avatar.walkTimer > 8) { avatar.walkTimer = 0; avatar.walkFrame = (avatar.walkFrame + 1) % 4; }
 
   // Idle bob
-  if (!isMoving && avatar.onGround) {
+  if (!isMoving) {
     avatar.bobOffset += 0.06 * avatar.bobDir;
     if (Math.abs(avatar.bobOffset) > 1.5) avatar.bobDir *= -1;
   } else {
     avatar.bobOffset *= 0.85;
   }
 
-  // Dust effect
-  if (isMoving && !avatar.wasMoving) {
-    spawnDust(avatar.x + avatar.w / 2, gY);
-  }
+  // Dust puffs while walking
   if (isMoving) {
     avatar.dustTimer++;
-    if (avatar.dustTimer > 7) {
+    if (avatar.dustTimer > 9) {
       avatar.dustTimer = 0;
-      spawnDust(avatar.x + (avatar.facingRight ? 0 : avatar.w), gY - 2);
+      const pos = getScreenPos(avatar.z, avatar.xFrac);
+      const scale = getScale(avatar.z);
+      spawnDust(pos.x, pos.y, scale);
     }
+  } else {
+    avatar.dustTimer = 0;
   }
   avatar.wasMoving = isMoving;
-
-  // Camera
-  const targetCamX = avatar.x - canvas.width / 2 + avatar.w / 2;
-  camX += (targetCamX - camX) * 0.1;
-  camX = Math.max(0, Math.min(WORLD_W - canvas.width, camX));
 }
 
 // ─── Particles ────────────────────────────────────────────────────────────────
-function spawnDust(x, y) {
-  for (let i = 0; i < 4; i++) {
+function spawnDust(x, y, scale) {
+  for (let i = 0; i < 3; i++) {
     particles.push({
       type: "dust",
       x, y,
-      vx: (Math.random() - 0.5) * 2.5,
-      vy: -Math.random() * 1.5 - 0.5,
+      vx: (Math.random() - 0.5) * 2.0 * scale,
+      vy: -Math.random() * 1.2 * scale - 0.3,
       life: 1, maxLife: 1,
-      size: 3 + Math.random() * 3,
+      size: (3 + Math.random() * 3) * scale,
       color: "rgba(180,160,120,"
     });
   }
 }
 
-function spawnSparkles(x, y) {
+function spawnSparkles(x, y, scale) {
   for (let i = 0; i < 18; i++) {
     const angle = (i / 18) * Math.PI * 2;
-    const speed = 2 + Math.random() * 3;
+    const speed = (2 + Math.random() * 3) * Math.max(scale, 0.3);
     particles.push({
       type: "sparkle",
       x, y,
       vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - 2,
+      vy: Math.sin(angle) * speed - 1.5,
       life: 1, maxLife: 1,
-      size: 3 + Math.random() * 4,
-      color: ["#ffe566","#ffcc00","#fff","#ffaa00","#aaffee"][Math.floor(Math.random()*5)]
+      size: (3 + Math.random() * 4) * Math.max(scale, 0.3),
+      color: ["#ffe566","#ffcc00","#fff","#ffaa00","#aaffee"][Math.floor(Math.random() * 5)]
     });
   }
 }
@@ -380,9 +408,9 @@ function spawnSparkles(x, y) {
 function updateParticles() {
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
-    p.x += p.vx;
-    p.y += p.vy;
-    p.vy += 0.1;
+    p.x  += p.vx;
+    p.y  += p.vy;
+    p.vy += 0.08;
     p.vx *= 0.92;
     p.life -= 0.04;
     if (p.life <= 0) particles.splice(i, 1);
@@ -391,18 +419,20 @@ function updateParticles() {
 
 // ─── Star Collection ──────────────────────────────────────────────────────────
 function checkStarCollection() {
-  const gY = groundY();
   for (const s of starData) {
     if (s.collected) continue;
-    const sy = gY * s.yFrac;
-    const sx = s.x;
-    // Collision radius
-    if (Math.abs((avatar.x + avatar.w/2) - sx) < 24 &&
-        Math.abs((avatar.y + avatar.h/2) - sy) < 24) {
+
+    const dz    = Math.abs(avatar.z    - s.z);
+    const dxFrac = Math.abs(avatar.xFrac - s.xFrac);
+
+    // Collect when close enough in both depth and lateral dimensions
+    if (dz < 0.06 && dxFrac < 0.08) {
       s.collected = true;
       score++;
       scoreDisplay.textContent = `⭐ ${score}`;
-      spawnSparkles(sx - camX, sy);
+      const pos   = getScreenPos(s.z, s.xFrac);
+      const scale = getScale(s.z);
+      spawnSparkles(pos.x, pos.y, scale);
     }
   }
 }
@@ -411,17 +441,10 @@ function checkStarCollection() {
 
 function drawBackground() {
   if (bgLoaded) {
-    // Draw only the visible slice of the painting for performance.
-    // Parallax: background scrolls at 0.7x the camera speed for depth effect.
-    const parallax = 0.7;
-    const imgW = bgImg.naturalWidth;
-    const imgH = bgImg.naturalHeight;
-    // Map the visible screen region back to image source coordinates
-    const srcX = (camX * parallax) * (imgW / WORLD_W);
-    const srcW = canvas.width * (imgW / WORLD_W);
-    ctx.drawImage(bgImg, srcX, 0, srcW, imgH, 0, 0, canvas.width, canvas.height);
+    // Fill the canvas with the full painting — no stretching because canvas
+    // is already sized to match the painting's aspect ratio.
+    ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
   } else {
-    // Fallback sky while loading
     const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
     grad.addColorStop(0, "#b8d8f8");
     grad.addColorStop(1, "#e8f4ff");
@@ -430,179 +453,167 @@ function drawBackground() {
   }
 }
 
-function drawGroundLine() {
-  // Subtle ground line so avatar has a clear visual standing surface
-  const gY = groundY();
-  ctx.save();
-  ctx.globalAlpha = 0.35;
-  ctx.strokeStyle = "#2a1a00";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(0, gY);
-  ctx.lineTo(canvas.width, gY);
-  ctx.stroke();
-  ctx.restore();
-}
+function drawAvatar(a) {
+  const pos   = getScreenPos(a.z, a.xFrac);
+  const scale = getScale(a.z);
 
-function drawAvatar(a, camX) {
-  const ax = a.x - camX;
-  const ay = a.y + a.bobOffset;
-  const aw = a.w;
-  const ah = a.h;
-  const cx2 = ax + aw / 2;
+  const ah  = AVATAR_BASE_H * scale;
+  const aw  = ah * (AVATAR_BASE_W / AVATAR_BASE_H);
+  const cx  = pos.x;
+  const bot = pos.y + a.bobOffset * scale; // feet touch the ground point
+  const top = bot - ah;
   const dir = a.facingRight ? 1 : -1;
 
-  // Walk leg animation
-  const legSwing = a.onGround ? Math.sin(a.walkFrame / 4 * Math.PI * 2) * 10 : 0;
+  const legSwing = Math.sin(a.walkFrame / 4 * Math.PI * 2) * 10 * scale;
 
   ctx.save();
 
-  // Shadow
-  ctx.fillStyle = "rgba(0,0,80,0.18)";
+  // Shadow (scales and fades with depth)
+  ctx.globalAlpha = 0.22 * (1 - a.z * 0.6);
+  ctx.fillStyle = "rgba(0,0,50,1)";
   ctx.beginPath();
-  ctx.ellipse(cx2, ay + ah + 2, aw * 0.6, 5, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, bot + 2 * scale, aw * 0.65, 4 * scale, 0, 0, Math.PI * 2);
   ctx.fill();
+  ctx.globalAlpha = 1;
 
   // Legs
   ctx.strokeStyle = "#5544cc";
-  ctx.lineWidth = 5;
+  ctx.lineWidth = Math.max(1, 5 * scale);
   ctx.lineCap = "round";
-  // Left leg
   ctx.beginPath();
-  ctx.moveTo(cx2 - 6, ay + ah * 0.65);
-  ctx.lineTo(cx2 - 6 - legSwing * 0.4, ay + ah + 2);
+  ctx.moveTo(cx - 6 * scale, top + ah * 0.65);
+  ctx.lineTo(cx - 6 * scale - legSwing * 0.4, bot + 2 * scale);
   ctx.stroke();
-  // Right leg
   ctx.beginPath();
-  ctx.moveTo(cx2 + 6, ay + ah * 0.65);
-  ctx.lineTo(cx2 + 6 + legSwing * 0.4, ay + ah + 2);
+  ctx.moveTo(cx + 6 * scale, top + ah * 0.65);
+  ctx.lineTo(cx + 6 * scale + legSwing * 0.4, bot + 2 * scale);
   ctx.stroke();
 
   // Body
   ctx.fillStyle = "#6655dd";
   ctx.beginPath();
-  ctx.roundRect(ax + 3, ay + ah * 0.35, aw - 6, ah * 0.35, 6);
+  ctx.roundRect(cx - aw / 2 + 3 * scale, top + ah * 0.35, aw - 6 * scale, ah * 0.35, 6 * scale);
   ctx.fill();
   ctx.strokeStyle = "#4433aa";
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = Math.max(0.5, 1.5 * scale);
   ctx.stroke();
 
-  // Backpack/outfit detail
+  // Outfit detail
   ctx.fillStyle = "#ffe566";
-  ctx.fillRect(ax + 5, ay + ah * 0.38, 5, ah * 0.2);
+  ctx.fillRect(cx - aw / 2 + 5 * scale, top + ah * 0.38, 5 * scale, ah * 0.2);
 
   // Arms
   ctx.strokeStyle = "#5544cc";
-  ctx.lineWidth = 5;
+  ctx.lineWidth = Math.max(1, 5 * scale);
   ctx.lineCap = "round";
-  const armSwing = a.onGround ? Math.sin(a.walkFrame / 4 * Math.PI * 2 + Math.PI) * 8 : 0;
+  const armSwing = Math.sin(a.walkFrame / 4 * Math.PI * 2 + Math.PI) * 8 * scale;
   ctx.beginPath();
-  ctx.moveTo(ax + 4, ay + ah * 0.38);
-  ctx.lineTo(ax + 4 - dir * 8 - armSwing * 0.3, ay + ah * 0.58);
+  ctx.moveTo(cx - aw / 2 + 4 * scale, top + ah * 0.38);
+  ctx.lineTo(cx - aw / 2 + 4 * scale - dir * 8 * scale - armSwing * 0.3, top + ah * 0.58);
   ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(ax + aw - 4, ay + ah * 0.38);
-  ctx.lineTo(ax + aw - 4 + dir * 8 + armSwing * 0.3, ay + ah * 0.58);
+  ctx.moveTo(cx + aw / 2 - 4 * scale, top + ah * 0.38);
+  ctx.lineTo(cx + aw / 2 - 4 * scale + dir * 8 * scale + armSwing * 0.3, top + ah * 0.58);
   ctx.stroke();
 
   // Head
+  const headR = aw * 0.42;
   ctx.fillStyle = "#ffddb0";
   ctx.beginPath();
-  ctx.arc(cx2, ay + ah * 0.22, aw * 0.42, 0, Math.PI * 2);
+  ctx.arc(cx, top + ah * 0.22, headR, 0, Math.PI * 2);
   ctx.fill();
   ctx.strokeStyle = "#cc9966";
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = Math.max(0.5, 1.5 * scale);
   ctx.stroke();
 
   // Hair
   ctx.fillStyle = "#8833aa";
   ctx.beginPath();
-  ctx.arc(cx2, ay + ah * 0.14, aw * 0.42, Math.PI, Math.PI * 2);
+  ctx.arc(cx, top + ah * 0.14, headR, Math.PI, Math.PI * 2);
   ctx.fill();
-  // Hair tuft
   ctx.beginPath();
-  ctx.arc(cx2 + dir * 6, ay + ah * 0.06, 5, 0, Math.PI * 2);
+  ctx.arc(cx + dir * 6 * scale, top + ah * 0.06, 5 * scale, 0, Math.PI * 2);
   ctx.fill();
 
   // Eyes
+  const eyeR = Math.max(0.5, 2.2 * scale);
   ctx.fillStyle = "#220044";
   ctx.beginPath();
-  ctx.arc(cx2 - dir * 6 * 0.5 - 4, ay + ah * 0.2, 2.2, 0, Math.PI * 2);
+  ctx.arc(cx - dir * 3 * scale - 4 * scale, top + ah * 0.2, eyeR, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(cx2 - dir * 6 * 0.5 + 4, ay + ah * 0.2, 2.2, 0, Math.PI * 2);
+  ctx.arc(cx - dir * 3 * scale + 4 * scale, top + ah * 0.2, eyeR, 0, Math.PI * 2);
   ctx.fill();
-  // Shine
   ctx.fillStyle = "#fff";
   ctx.beginPath();
-  ctx.arc(cx2 - dir * 6 * 0.5 - 3, ay + ah * 0.19, 0.9, 0, Math.PI * 2);
+  ctx.arc(cx - dir * 3 * scale - 3 * scale, top + ah * 0.19, Math.max(0.3, 0.9 * scale), 0, Math.PI * 2);
   ctx.fill();
 
   // Smile
   ctx.strokeStyle = "#cc6644";
-  ctx.lineWidth = 1.8;
+  ctx.lineWidth = Math.max(0.5, 1.8 * scale);
   ctx.beginPath();
-  ctx.arc(cx2, ay + ah * 0.26, 4, 0.2, Math.PI - 0.2);
+  ctx.arc(cx, top + ah * 0.26, 4 * scale, 0.2, Math.PI - 0.2);
   ctx.stroke();
 
   // Rosy cheeks
   ctx.fillStyle = "rgba(255,120,100,0.35)";
   ctx.beginPath();
-  ctx.ellipse(cx2 - 7, ay + ah * 0.25, 4, 3, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx - 7 * scale, top + ah * 0.25, 4 * scale, 3 * scale, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.ellipse(cx2 + 7, ay + ah * 0.25, 4, 3, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx + 7 * scale, top + ah * 0.25, 4 * scale, 3 * scale, 0, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
 }
 
-function drawStar(s, camX) {
+function drawStar(s) {
   if (s.collected) return;
-  const gY = groundY();
-  const sx = s.x - camX;
-  const sy = gY * s.yFrac;
 
-  if (sx < -30 || sx > canvas.width + 30) return;
+  const pos   = getScreenPos(s.z, s.xFrac);
+  const scale = getScale(s.z);
+  const alpha = 1.0 - s.z * 0.35; // slightly faded at distance
 
   s.angle += 0.04;
   s.pulse += 0.07;
-  const scale = 1 + Math.sin(s.pulse) * 0.12;
-  const r = 13 * scale;
+  const pScale = 1 + Math.sin(s.pulse) * 0.12;
+  const r = 13 * scale * pScale;
 
   ctx.save();
-  ctx.translate(sx, sy);
+  ctx.globalAlpha = alpha;
+  ctx.translate(pos.x, pos.y);
   ctx.rotate(s.angle);
-  ctx.scale(scale, scale);
 
   // Glow
-  const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, r + 6);
+  const glowR = r + 6 * scale;
+  const glow = ctx.createRadialGradient(0, 0, 2 * scale, 0, 0, glowR);
   glow.addColorStop(0, "rgba(255,230,80,0.6)");
   glow.addColorStop(1, "rgba(255,200,0,0)");
   ctx.fillStyle = glow;
   ctx.beginPath();
-  ctx.arc(0, 0, r + 6, 0, Math.PI * 2);
+  ctx.arc(0, 0, glowR, 0, Math.PI * 2);
   ctx.fill();
 
-  // 5-point star
+  // 5-point star shape
   ctx.beginPath();
   for (let i = 0; i < 10; i++) {
-    const angle = (i / 10) * Math.PI * 2 - Math.PI / 2;
+    const ang = (i / 10) * Math.PI * 2 - Math.PI / 2;
     const rad = i % 2 === 0 ? r : r * 0.42;
-    if (i === 0) ctx.moveTo(Math.cos(angle) * rad, Math.sin(angle) * rad);
-    else ctx.lineTo(Math.cos(angle) * rad, Math.sin(angle) * rad);
+    if (i === 0) ctx.moveTo(Math.cos(ang) * rad, Math.sin(ang) * rad);
+    else         ctx.lineTo(Math.cos(ang) * rad, Math.sin(ang) * rad);
   }
   ctx.closePath();
   ctx.fillStyle = "#ffe566";
   ctx.fill();
   ctx.strokeStyle = "#cc8800";
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = Math.max(0.5, 1.5 * scale);
   ctx.stroke();
 
   ctx.restore();
 }
 
-function drawParticles(camX) {
+function drawParticles() {
   for (const p of particles) {
     const alpha = Math.max(0, p.life);
     if (p.type === "dust") {
@@ -611,7 +622,6 @@ function drawParticles(camX) {
       ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
       ctx.fill();
     } else {
-      // Sparkle
       ctx.save();
       ctx.globalAlpha = alpha;
       ctx.fillStyle = p.color;
@@ -626,7 +636,6 @@ function drawParticles(camX) {
 }
 
 function drawTitleAndScore() {
-  // Title
   ctx.save();
   ctx.font = `bold ${Math.max(14, canvas.width * 0.022)}px "Comic Sans MS", cursive`;
   ctx.fillStyle = "#aac8ff";
@@ -634,7 +643,6 @@ function drawTitleAndScore() {
   ctx.shadowBlur = 4;
   ctx.fillText("🎨 Yuli's Universe", 12, 28);
 
-  // Score
   ctx.font = `bold ${Math.max(14, canvas.width * 0.024)}px "Comic Sans MS", cursive`;
   ctx.fillStyle = "#ffe566";
   ctx.textAlign = "right";
@@ -647,33 +655,31 @@ let lastTime = 0;
 
 function gameLoop(timestamp) {
   if (!gameRunning) return;
-  const dt = Math.min((timestamp - lastTime) / 16.67, 3);
   lastTime = timestamp;
-  totalTime++;
 
-  // Update
-  updateAvatar(dt);
+  updateAvatar();
   updateParticles();
   checkStarCollection();
 
-  // Draw background (Yuli's painting with parallax)
+  // Draw the full painting as background (no camera scroll)
   drawBackground();
 
-  // Draw subtle ground line
-  drawGroundLine();
+  // Collect all scene objects and sort by z (draw furthest first)
+  const objects = [];
 
-  // Draw stars
   for (const s of starData) {
-    drawStar(s, camX);
+    if (!s.collected) objects.push({ type: "star", z: s.z, ref: s });
+  }
+  objects.push({ type: "avatar", z: avatar.z });
+
+  objects.sort((a, b) => b.z - a.z); // furthest first
+
+  for (const obj of objects) {
+    if (obj.type === "star")   drawStar(obj.ref);
+    else                       drawAvatar(avatar);
   }
 
-  // Draw avatar
-  drawAvatar(avatar, camX);
-
-  // Draw particles
-  drawParticles(camX);
-
-  // Draw UI
+  drawParticles();
   drawTitleAndScore();
 
   requestAnimationFrame(gameLoop);
