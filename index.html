@@ -30,7 +30,7 @@
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(10, 15, 50, 0.88);
-      display: flex;
+      display: none; /* shown after background.png finishes loading */
       flex-direction: column;
       align-items: center;
       justify-content: center;
@@ -96,6 +96,34 @@
       pointer-events: none;
       z-index: 5;
     }
+    #loadingScreen {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(10, 15, 50, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      z-index: 20;
+      color: #aac8ff;
+      font-size: clamp(14px, 2vw, 20px);
+    }
+    #loadingScreen .load-title {
+      color: #ffe566;
+      font-size: clamp(22px, 4vw, 40px);
+      text-shadow: 0 0 16px #ffcc00;
+      margin-bottom: 18px;
+    }
+    .spinner {
+      width: 48px; height: 48px;
+      border: 5px solid #4a5fc1;
+      border-top-color: #ffe566;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -103,6 +131,11 @@
   <canvas id="gameCanvas"></canvas>
   <div id="titleDisplay">🎨 Yuli's Universe</div>
   <div id="scoreDisplay">⭐ 0</div>
+  <div id="loadingScreen">
+    <div class="load-title">🎨 Yuli's Universe</div>
+    <div class="spinner"></div>
+    <div>Loading Yuli's painting…</div>
+  </div>
   <div id="startScreen">
     <h1>🌟 Yuli's Universe 🌟</h1>
     <p class="subtitle">Inspired by Yuli's beautiful city painting ✨</p>
@@ -124,6 +157,7 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const startScreen = document.getElementById("startScreen");
+const loadingScreen = document.getElementById("loadingScreen");
 const scoreDisplay = document.getElementById("scoreDisplay");
 
 function resize() {
@@ -140,87 +174,26 @@ function resize() {
 resize();
 window.addEventListener("resize", resize);
 
+// ─── Background Image ─────────────────────────────────────────────────────────
+const bgImg = new Image();
+let bgLoaded = false;
+bgImg.onload = function() {
+  bgLoaded = true;
+  loadingScreen.style.display = "none";
+  startScreen.style.display = "flex";
+};
+bgImg.onerror = function() {
+  // Fallback: hide loading screen even if image fails
+  loadingScreen.style.display = "none";
+  startScreen.style.display = "flex";
+};
+bgImg.src = "background.png";
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 const WORLD_W = 3200;
-const GROUND_Y_FRAC = 0.82; // fraction of canvas height
+const GROUND_Y_FRAC = 0.83; // avatar ground at 83% of canvas height (painting street ~bottom 17%)
 
 function groundY() { return canvas.height * GROUND_Y_FRAC; }
-
-// ─── World Building Data (generated once) ────────────────────────────────────
-const rng = (function() {
-  let s = 42;
-  return function() {
-    s = (s * 16807 + 0) % 2147483647;
-    return (s - 1) / 2147483646;
-  };
-})();
-
-// Buildings
-const buildings = [];
-function genBuildings() {
-  buildings.length = 0;
-  const bColors = ["#3a4bbf", "#4a5fc1", "#2d3a9e", "#5568d4", "#303f99", "#6272e0"];
-  const winColors = ["#fffbe0","#ffd97a","#d0e8ff"];
-  // Left cluster
-  const leftX = [0, 80, 170, 260, 330, 410];
-  const leftH = [260, 310, 190, 280, 350, 230];
-  const leftW = [90, 80, 85, 75, 90, 80];
-  for (let i = 0; i < leftX.length; i++) {
-    buildings.push({
-      x: leftX[i], w: leftW[i], h: leftH[i],
-      color: bColors[i % bColors.length],
-      winColor: winColors[i % winColors.length]
-    });
-  }
-  // Mid area sparse
-  const midPositions = [700, 820, 1050, 1180, 1400, 1600, 1750, 1950, 2100, 2300];
-  const midH = [210, 260, 180, 300, 240, 200, 320, 260, 190, 280];
-  const midW = [75, 70, 80, 70, 85, 75, 70, 80, 75, 70];
-  for (let i = 0; i < midPositions.length; i++) {
-    buildings.push({
-      x: midPositions[i], w: midW[i], h: midH[i],
-      color: bColors[(i+2) % bColors.length],
-      winColor: winColors[(i+1) % winColors.length]
-    });
-  }
-  // Right cluster
-  const rightBase = WORLD_W - 500;
-  const rightX = [rightBase, rightBase+90, rightBase+180, rightBase+270, rightBase+360, rightBase+430];
-  const rightH = [270, 320, 200, 290, 260, 350];
-  const rightW = [85, 80, 80, 75, 85, 80];
-  for (let i = 0; i < rightX.length; i++) {
-    buildings.push({
-      x: rightX[i], w: rightW[i], h: rightH[i],
-      color: bColors[(i+1) % bColors.length],
-      winColor: winColors[(i+2) % winColors.length]
-    });
-  }
-}
-genBuildings();
-
-// Trees
-const trees = [];
-function genTrees() {
-  trees.length = 0;
-  const txPositions = [500, 620, 660, 950, 1020, 1280, 1340, 1500, 1560, 1680, 1800, 1860, 2020, 2200, 2350, 2500, 2650, 2800];
-  for (const tx of txPositions) {
-    trees.push({ x: tx, size: 38 + Math.floor(rng() * 20) });
-  }
-}
-genTrees();
-
-// Clouds (parallax: speed multiplier)
-const clouds = [];
-function genClouds() {
-  clouds.length = 0;
-  const positions = [100, 350, 650, 950, 1250, 1550, 1850, 2150, 2450, 2750, 3050];
-  const ys = [60, 80, 50, 90, 65, 75, 55, 85, 70, 60, 80];
-  const sizes = [70, 55, 80, 60, 75, 50, 65, 70, 55, 60, 75];
-  for (let i = 0; i < positions.length; i++) {
-    clouds.push({ x: positions[i], y: ys[i], size: sizes[i], speed: 0.15 + rng() * 0.1 });
-  }
-}
-genClouds();
 
 // Stars (collectibles)
 const starData = [];
@@ -236,7 +209,7 @@ function genStars() {
     {x:3000, y:0.85},{x:3100, y:0.72}
   ];
   for (const p of positions) {
-    starData.push({ x: p.x, yFrac: p.y, collected: false, angle: rng() * Math.PI * 2, pulse: rng() * Math.PI * 2 });
+    starData.push({ x: p.x, yFrac: p.y, collected: false, angle: Math.random() * Math.PI * 2, pulse: Math.random() * Math.PI * 2 });
   }
 }
 genStars();
@@ -436,198 +409,37 @@ function checkStarCollection() {
 
 // ─── Drawing Functions ────────────────────────────────────────────────────────
 
-function drawSky() {
-  const grad = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.85);
-  grad.addColorStop(0, "#b8d8f8");
-  grad.addColorStop(0.5, "#cce8ff");
-  grad.addColorStop(1, "#e8f4ff");
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+function drawBackground() {
+  if (bgLoaded) {
+    // Draw only the visible slice of the painting for performance.
+    // Parallax: background scrolls at 0.7x the camera speed for depth effect.
+    const parallax = 0.7;
+    const imgW = bgImg.naturalWidth;
+    const imgH = bgImg.naturalHeight;
+    // Map the visible screen region back to image source coordinates
+    const srcX = (camX * parallax) * (imgW / WORLD_W);
+    const srcW = canvas.width * (imgW / WORLD_W);
+    ctx.drawImage(bgImg, srcX, 0, srcW, imgH, 0, 0, canvas.width, canvas.height);
+  } else {
+    // Fallback sky while loading
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, "#b8d8f8");
+    grad.addColorStop(1, "#e8f4ff");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
 }
 
-function drawGround() {
+function drawGroundLine() {
+  // Subtle ground line so avatar has a clear visual standing surface
   const gY = groundY();
-  // Grass/path gradient
-  const grad = ctx.createLinearGradient(0, gY, 0, canvas.height);
-  grad.addColorStop(0, "#8db85c");
-  grad.addColorStop(0.15, "#7aaa4a");
-  grad.addColorStop(1, "#5a7a32");
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, gY, canvas.width, canvas.height - gY);
-
-  // Path strip (sidewalk)
-  ctx.fillStyle = "#c8b87a";
-  ctx.fillRect(0, gY + 4, canvas.width, (canvas.height - gY) * 0.35);
-
-  // Ground line (crayon style)
-  ctx.strokeStyle = "#3a4bbf";
-  ctx.lineWidth = 2.5;
+  ctx.save();
+  ctx.globalAlpha = 0.35;
+  ctx.strokeStyle = "#2a1a00";
+  ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(0, gY);
   ctx.lineTo(canvas.width, gY);
-  ctx.stroke();
-}
-
-function drawBuilding(b, camX) {
-  const gY = groundY();
-  const sx = b.x - camX;
-  const sy = gY - b.h;
-  const sw = b.w;
-  const sh = b.h;
-
-  if (sx + sw < -10 || sx > canvas.width + 10) return;
-
-  // Building fill
-  ctx.fillStyle = b.color + "33";
-  ctx.fillRect(sx, sy, sw, sh);
-
-  // Sketchy outline (crayon style - slightly wobbly lines)
-  ctx.strokeStyle = b.color;
-  ctx.lineWidth = 2.5;
-  ctx.lineJoin = "round";
-  ctx.lineCap = "round";
-
-  // Draw building outline with slight wobble
-  function sketchLine(x1, y1, x2, y2) {
-    ctx.beginPath();
-    ctx.moveTo(x1 + (Math.random()-0.5)*0.8, y1 + (Math.random()-0.5)*0.8);
-    ctx.lineTo(x2 + (Math.random()-0.5)*0.8, y2 + (Math.random()-0.5)*0.8);
-    ctx.stroke();
-  }
-  sketchLine(sx, sy, sx+sw, sy);       // top
-  sketchLine(sx, sy, sx, gY);           // left
-  sketchLine(sx+sw, sy, sx+sw, gY);    // right
-
-  // Windows
-  const winRows = Math.max(2, Math.floor(sh / 55));
-  const winCols = Math.max(1, Math.floor(sw / 30));
-  const winW = 14, winH = 11;
-  const startX = sx + (sw - winCols * 22) / 2;
-  const startY = sy + 18;
-  const stepX = (sw - 14) / (winCols + 0.5);
-  const stepY = (sh - 30) / (winRows + 0.5);
-
-  for (let row = 0; row < winRows; row++) {
-    for (let col = 0; col < winCols; col++) {
-      const wx = sx + 10 + col * stepX;
-      const wy = sy + 18 + row * stepY;
-      // Window glow
-      ctx.fillStyle = b.winColor;
-      ctx.fillRect(wx, wy, winW, winH);
-      ctx.strokeStyle = b.color;
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(wx, wy, winW, winH);
-      // Cross divider
-      ctx.beginPath();
-      ctx.moveTo(wx + winW/2, wy);
-      ctx.lineTo(wx + winW/2, wy + winH);
-      ctx.moveTo(wx, wy + winH/2);
-      ctx.lineTo(wx + winW, wy + winH/2);
-      ctx.strokeStyle = b.color + "88";
-      ctx.lineWidth = 0.8;
-      ctx.stroke();
-    }
-  }
-}
-
-function drawTree(t, camX) {
-  const gY = groundY();
-  const tx = t.x - camX;
-  const sz = t.size;
-  if (tx + sz < -5 || tx - sz > canvas.width + 5) return;
-
-  const ty = gY - sz * 0.15;
-
-  // Trunk
-  ctx.fillStyle = "#7a4a1a";
-  ctx.fillRect(tx - 4, ty - sz * 0.3, 8, sz * 0.3);
-
-  // Three tiers of triangles (evergreen)
-  const treeGreen = "#2a7a3a";
-  const treeGreen2 = "#1a6028";
-  for (let tier = 0; tier < 3; tier++) {
-    const tierW = sz * (1 - tier * 0.22);
-    const tierH = sz * 0.45;
-    const tierY = ty - sz * (0.28 + tier * 0.32);
-    ctx.beginPath();
-    ctx.moveTo(tx, tierY - tierH);
-    ctx.lineTo(tx - tierW/2, tierY);
-    ctx.lineTo(tx + tierW/2, tierY);
-    ctx.closePath();
-    ctx.fillStyle = tier % 2 === 0 ? treeGreen : treeGreen2;
-    ctx.fill();
-    ctx.strokeStyle = "#1a5020";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-  }
-}
-
-function drawCloud(c, camX, parallaxFactor) {
-  const cx = c.x - camX * parallaxFactor;
-  const cy = c.y;
-  const cs = c.size;
-  // Wrap cloud horizontally
-  const wrappedX = ((cx % (canvas.width + cs * 3)) + canvas.width + cs * 3) % (canvas.width + cs * 3) - cs;
-  if (wrappedX + cs * 3 < -5 || wrappedX - cs > canvas.width + 5) return;
-
-  ctx.save();
-  ctx.globalAlpha = 0.88;
-  ctx.fillStyle = "#ffffff";
-  const puffs = [
-    {dx: 0,   dy: 0,   r: cs * 0.5},
-    {dx: cs * 0.45, dy: cs * 0.07, r: cs * 0.38},
-    {dx: -cs * 0.4, dy: cs * 0.1,  r: cs * 0.35},
-    {dx: cs * 0.22, dy: -cs * 0.15, r: cs * 0.42},
-    {dx: -cs * 0.15, dy: -cs * 0.1, r: cs * 0.3},
-  ];
-  for (const puff of puffs) {
-    ctx.beginPath();
-    ctx.arc(wrappedX + puff.dx, cy + puff.dy, puff.r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  // Outline
-  ctx.strokeStyle = "#c8dff0";
-  ctx.lineWidth = 1.5;
-  ctx.globalAlpha = 0.5;
-  for (const puff of puffs) {
-    ctx.beginPath();
-    ctx.arc(wrappedX + puff.dx, cy + puff.dy, puff.r, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
-function drawSun(camX) {
-  // Sun in upper-right area (fixed parallax slightly)
-  const sx = canvas.width - 80 - camX * 0.02;
-  const sy = 65;
-  const r = 35;
-
-  // Rays
-  ctx.save();
-  ctx.strokeStyle = "#ffdd55";
-  ctx.lineWidth = 3;
-  ctx.lineCap = "round";
-  for (let i = 0; i < 12; i++) {
-    const angle = (i / 12) * Math.PI * 2 + totalTime * 0.003;
-    const inner = r + 5;
-    const outer = r + 16 + (i % 2) * 6;
-    ctx.beginPath();
-    ctx.moveTo(sx + Math.cos(angle) * inner, sy + Math.sin(angle) * inner);
-    ctx.lineTo(sx + Math.cos(angle) * outer, sy + Math.sin(angle) * outer);
-    ctx.stroke();
-  }
-  // Sun body
-  const sunGrad = ctx.createRadialGradient(sx-4, sy-4, 2, sx, sy, r);
-  sunGrad.addColorStop(0, "#fffbcc");
-  sunGrad.addColorStop(0.5, "#ffe566");
-  sunGrad.addColorStop(1, "#ffaa00");
-  ctx.beginPath();
-  ctx.arc(sx, sy, r, 0, Math.PI * 2);
-  ctx.fillStyle = sunGrad;
-  ctx.fill();
-  ctx.strokeStyle = "#cc8800";
-  ctx.lineWidth = 2;
   ctx.stroke();
   ctx.restore();
 }
@@ -839,44 +651,16 @@ function gameLoop(timestamp) {
   lastTime = timestamp;
   totalTime++;
 
-  // Animate clouds
-  for (const c of clouds) {
-    c.x += c.speed;
-    if (c.x > WORLD_W + 200) c.x = -200;
-  }
-
   // Update
   updateAvatar(dt);
   updateParticles();
   checkStarCollection();
 
-  // Draw sky
-  drawSky();
+  // Draw background (Yuli's painting with parallax)
+  drawBackground();
 
-  // Draw sun (behind buildings)
-  drawSun(camX);
-
-  // Draw far clouds (parallax 0.3)
-  for (const c of clouds) {
-    if (c.size < 60) drawCloud(c, camX, 0.3);
-  }
-  // Draw near clouds (parallax 0.6)
-  for (const c of clouds) {
-    if (c.size >= 60) drawCloud(c, camX, 0.55);
-  }
-
-  // Draw buildings
-  for (const b of buildings) {
-    drawBuilding(b, camX);
-  }
-
-  // Draw trees
-  for (const t of trees) {
-    drawTree(t, camX);
-  }
-
-  // Draw ground
-  drawGround();
+  // Draw subtle ground line
+  drawGroundLine();
 
   // Draw stars
   for (const s of starData) {
