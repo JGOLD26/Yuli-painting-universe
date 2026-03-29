@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Yuli's Universe 🌟</title>
+  <title>Choose Your Universe! 🌟</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      background: #0a0a1a;
+      background: #060615;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -16,374 +16,341 @@
       font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
       overflow: hidden;
     }
-    #gameWrapper {
-      position: relative;
-      display: inline-block;
-    }
-    #gameCanvas {
-      display: block;
-      border: 4px solid #4a5fc1;
-      border-radius: 8px;
-      box-shadow: 0 0 40px rgba(74,95,193,0.6);
-    }
-    #startScreen {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(10, 15, 50, 0.88);
-      display: none; /* shown after background.png finishes loading */
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      border-radius: 4px;
-      z-index: 10;
-    }
-    #startScreen h1 {
-      font-size: clamp(28px, 5vw, 52px);
-      color: #ffe566;
-      text-shadow: 0 0 20px #ffcc00, 2px 2px 0 #c47000;
-      margin-bottom: 8px;
-      letter-spacing: 2px;
-    }
-    #startScreen p.subtitle {
-      color: #aac8ff;
-      font-size: clamp(13px, 2vw, 18px);
-      margin-bottom: 30px;
-    }
-    .instructions {
-      background: rgba(74,95,193,0.25);
-      border: 2px solid #4a5fc1;
-      border-radius: 12px;
-      padding: 16px 28px;
-      color: #ddeeff;
-      font-size: clamp(12px, 1.8vw, 15px);
-      line-height: 1.8;
-      margin-bottom: 30px;
-      max-width: 400px;
-      text-align: center;
-    }
-    .instructions span { color: #ffe566; font-weight: bold; }
-    #playBtn {
-      background: linear-gradient(135deg, #ffe566, #ffaa00);
-      border: none;
-      border-radius: 50px;
-      padding: 14px 50px;
-      font-family: inherit;
-      font-size: clamp(16px, 2.5vw, 22px);
-      font-weight: bold;
-      color: #3a2000;
-      cursor: pointer;
-      box-shadow: 0 4px 20px rgba(255,170,0,0.5);
-      transition: transform 0.1s, box-shadow 0.1s;
-      letter-spacing: 1px;
-    }
-    #playBtn:hover { transform: scale(1.07); box-shadow: 0 6px 28px rgba(255,170,0,0.7); }
-    #playBtn:active { transform: scale(0.97); }
-    #scoreDisplay {
-      position: absolute;
-      top: 12px; right: 16px;
-      color: #ffe566;
-      font-size: clamp(15px, 2vw, 20px);
-      text-shadow: 1px 1px 4px #000;
-      pointer-events: none;
-      z-index: 5;
-    }
-    #titleDisplay {
-      position: absolute;
-      top: 12px; left: 16px;
-      color: #aac8ff;
-      font-size: clamp(13px, 1.8vw, 17px);
-      text-shadow: 1px 1px 4px #000;
-      pointer-events: none;
-      z-index: 5;
-    }
-    #loadingScreen {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(10, 15, 50, 0.95);
+
+    /* ── Universe Selection Screen ─────────────────────────────── */
+    #universeScreen {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, #1a1035 0%, #060615 100%);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      border-radius: 4px;
-      z-index: 20;
-      color: #aac8ff;
-      font-size: clamp(14px, 2vw, 20px);
+      z-index: 100;
     }
-    #loadingScreen .load-title {
+    .sel-title {
+      font-size: clamp(24px, 4.8vw, 52px);
       color: #ffe566;
-      font-size: clamp(22px, 4vw, 40px);
-      text-shadow: 0 0 16px #ffcc00;
-      margin-bottom: 18px;
+      text-shadow: 0 0 22px #ffcc00, 2px 2px 0 #b47000;
+      margin-bottom: 36px;
+      letter-spacing: 2px;
+      animation: titleGlow 2s ease-in-out infinite alternate;
     }
-    .spinner {
-      width: 48px; height: 48px;
-      border: 5px solid #4a5fc1;
-      border-top-color: #ffe566;
+    @keyframes titleGlow {
+      from { text-shadow: 0 0 16px #ffcc00, 2px 2px 0 #b47000; }
+      to   { text-shadow: 0 0 40px #ffdd44, 0 0 80px rgba(255,220,0,.3), 2px 2px 0 #b47000; }
+    }
+    .cards-row {
+      display: flex;
+      gap: clamp(14px, 3.5vw, 44px);
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 0 16px;
+    }
+    .ucard {
+      border-radius: 20px;
+      padding: 16px;
+      width: clamp(150px, 24vw, 280px);
+      cursor: pointer;
+      transition: transform .2s, box-shadow .2s;
+      text-align: center;
+      background: rgba(255,255,255,.06);
+      user-select: none;
+    }
+    .ucard:hover { transform: scale(1.07) translateY(-6px); }
+    .ucard-yuli { border: 3px solid #4a5fc1; box-shadow: 0 0 18px rgba(74,95,193,.45); }
+    .ucard-yuli:hover { box-shadow: 0 0 36px rgba(74,95,193,.9), 0 0 70px rgba(74,95,193,.25); }
+    .ucard-adam { border: 3px solid #9b59b6; box-shadow: 0 0 18px rgba(155,89,182,.45); }
+    .ucard-adam:hover { box-shadow: 0 0 36px rgba(155,89,182,.9), 0 0 70px rgba(155,89,182,.25); }
+    .card-img {
+      width: 100%; aspect-ratio: 4/3; object-fit: cover;
+      border-radius: 12px; display: block; margin-bottom: 12px;
+    }
+    .card-name { font-size: clamp(13px, 2vw, 20px); font-weight: bold; margin-bottom: 4px; }
+    .ucard-yuli .card-name { color: #aac8ff; }
+    .ucard-adam .card-name { color: #d7a9f8; }
+    .card-hint { font-size: clamp(10px, 1.4vw, 14px); color: #9999bb; }
+
+    /* Twinkling CSS stars on selection background */
+    .tw-star {
+      position: fixed;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      background: #fff;
+      pointer-events: none;
+      animation: twinkle var(--d,3s) var(--e,0s) ease-in-out infinite alternate;
+    }
+    @keyframes twinkle {
+      from { opacity: .15; transform: scale(1); }
+      to   { opacity: 1;   transform: scale(1.6); }
+    }
+
+    /* ── Game Wrapper ─────────────────────────────────────────── */
+    #gameWrapper { position: relative; display: inline-block; }
+    #gameCanvas  { display: block; border-radius: 8px; }
+    #gameCanvas.yuli-border { border: 4px solid #4a5fc1; box-shadow: 0 0 40px rgba(74,95,193,.6); }
+    #gameCanvas.adam-border { border: 4px solid #9b59b6; box-shadow: 0 0 40px rgba(155,89,182,.6); }
+
+    /* ── HUD ──────────────────────────────────────────────────── */
+    #titleDisplay, #scoreDisplay {
+      position: absolute; top: 12px;
+      text-shadow: 1px 1px 4px #000;
+      pointer-events: none; z-index: 5;
+      font-size: clamp(12px, 1.8vw, 17px);
+    }
+    #titleDisplay { left: 16px; color: #aac8ff; }
+    #scoreDisplay { right: 16px; color: #ffe566; }
+
+    /* ── Back Button ──────────────────────────────────────────── */
+    #backBtn {
+      position: absolute; bottom: 12px; left: 14px;
+      background: rgba(0,0,0,.5);
+      border: 2px solid rgba(170,200,255,.55);
+      border-radius: 24px;
+      padding: 7px 16px;
+      font-family: inherit; font-size: clamp(10px, 1.3vw, 14px);
+      color: #aac8ff; cursor: pointer; z-index: 5;
+      transition: background .15s, transform .1s;
+      display: none;
+    }
+    #backBtn:hover { background: rgba(74,95,193,.4); transform: scale(1.05); }
+
+    /* ── Loading Screen ───────────────────────────────────────── */
+    #loadingScreen {
+      position: absolute; inset: 0;
+      background: rgba(8,10,40,.97);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      border-radius: 4px; z-index: 20;
+      color: #aac8ff; font-size: clamp(13px, 1.8vw, 18px);
+    }
+    .load-title {
+      font-size: clamp(20px, 3.5vw, 36px);
+      color: #ffe566; text-shadow: 0 0 14px #ffcc00;
       margin-bottom: 16px;
     }
+    .spinner {
+      width: 46px; height: 46px;
+      border: 5px solid #4a5fc1; border-top-color: #ffe566;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      margin-bottom: 14px;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Start Screen ─────────────────────────────────────────── */
+    #startScreen {
+      position: absolute; inset: 0;
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      border-radius: 4px; z-index: 10;
+    }
+    #startScreen.yuli-ss { background: rgba(8,12,46,.88); }
+    #startScreen.adam-ss { background: rgba(16,5,32,.88); }
+    #startScreen h1 {
+      font-size: clamp(24px, 4.5vw, 48px);
+      color: #ffe566;
+      text-shadow: 0 0 18px #ffcc00, 2px 2px 0 #b47000;
+      margin-bottom: 8px; letter-spacing: 2px;
+    }
+    .ss-sub {
+      font-size: clamp(11px, 1.8vw, 16px);
+      margin-bottom: 26px;
+    }
+    #startScreen.yuli-ss .ss-sub { color: #aac8ff; }
+    #startScreen.adam-ss .ss-sub { color: #d7a9f8; }
+    .ss-instr {
+      border-radius: 12px; padding: 13px 24px;
+      color: #ddeeff; font-size: clamp(11px, 1.6vw, 14px);
+      line-height: 1.8; margin-bottom: 26px;
+      max-width: 370px; text-align: center;
+    }
+    #startScreen.yuli-ss .ss-instr { background: rgba(74,95,193,.22); border: 2px solid #4a5fc1; }
+    #startScreen.adam-ss .ss-instr { background: rgba(155,89,182,.22); border: 2px solid #9b59b6; }
+    .ss-instr .k { color: #ffe566; font-weight: bold; }
+    #playBtn {
+      background: linear-gradient(135deg, #ffe566, #ffaa00);
+      border: none; border-radius: 50px;
+      padding: 12px 46px;
+      font-family: inherit; font-size: clamp(14px, 2.2vw, 20px);
+      font-weight: bold; color: #3a2000;
+      cursor: pointer;
+      box-shadow: 0 4px 18px rgba(255,170,0,.5);
+      transition: transform .1s, box-shadow .1s;
+      letter-spacing: 1px;
+    }
+    #playBtn:hover { transform: scale(1.07); box-shadow: 0 6px 26px rgba(255,170,0,.7); }
+    #playBtn:active { transform: scale(.97); }
   </style>
 </head>
 <body>
-<div id="gameWrapper">
+
+<!-- Universe Selection Screen -->
+<div id="universeScreen">
+  <div class="sel-title">🌟 Choose Your Universe!</div>
+  <div class="cards-row">
+    <div class="ucard ucard-yuli" id="yuliCard">
+      <img class="card-img" src="background.png"  alt="Yuli's city" />
+      <div class="card-name">🏙️ Yuli's Universe</div>
+      <div class="card-hint">Walk into the city</div>
+    </div>
+    <div class="ucard ucard-adam" id="adamCard">
+      <img class="card-img" src="background2.png" alt="Adam's magic world" />
+      <div class="card-name">🪐 Adam's Universe</div>
+      <div class="card-hint">Explore the magic world</div>
+    </div>
+  </div>
+</div>
+
+<!-- Game Area (hidden until universe chosen) -->
+<div id="gameWrapper" style="display:none">
   <canvas id="gameCanvas"></canvas>
-  <div id="titleDisplay">🎨 Yuli's Universe</div>
+  <div id="titleDisplay"></div>
   <div id="scoreDisplay">⭐ 0</div>
+  <button id="backBtn">🔙 Back to Universes</button>
   <div id="loadingScreen">
-    <div class="load-title">🎨 Yuli's Universe</div>
+    <div class="load-title" id="loadTitle"></div>
     <div class="spinner"></div>
-    <div>Loading Yuli's painting…</div>
+    <div id="loadMsg"></div>
   </div>
   <div id="startScreen">
-    <h1>🌟 Yuli's Universe 🌟</h1>
-    <p class="subtitle">Inspired by Yuli's beautiful city painting ✨</p>
-    <div class="instructions">
-      <span>Forward / Back:</span> ↑ ↓ or W S<br/>
-      <span>Left / Right:</span> ←→ or A D<br/>
-      <span>Collect</span> all the ⭐ stars!<br/>
-      Walk deep into Yuli's city! 🏙️
-    </div>
+    <h1 id="ssTitle"></h1>
+    <p class="ss-sub" id="ssSub"></p>
+    <div class="ss-instr" id="ssInstr"></div>
     <button id="playBtn">▶ Play!</button>
   </div>
 </div>
 
 <script>
-(function() {
+(function () {
 "use strict";
 
-// ─── Canvas Setup ────────────────────────────────────────────────────────────
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-const startScreen = document.getElementById("startScreen");
-const loadingScreen = document.getElementById("loadingScreen");
-const scoreDisplay = document.getElementById("scoreDisplay");
+/* ── Twinkling background stars ─────────────────────────────────────────── */
+for (let i = 0; i < 90; i++) {
+  const s = document.createElement("div");
+  s.className = "tw-star";
+  const r = 1 + Math.random() * 2.2;
+  s.style.cssText =
+    "width:" + r + "px;height:" + r + "px;" +
+    "left:" + (Math.random() * 100).toFixed(1) + "%;" +
+    "top:"  + (Math.random() * 100).toFixed(1) + "%;" +
+    "--d:"  + (2 + Math.random() * 4).toFixed(1) + "s;" +
+    "--e:"  + (Math.random() * 5).toFixed(1) + "s;";
+  document.body.appendChild(s);
+}
 
-// Painting native aspect ratio (will be updated once image loads).
-// These defaults reflect the known painting dimensions used as a fallback.
-const DEFAULT_PAINTING_W = 4096;
-const DEFAULT_PAINTING_H = 3060;
-let paintingRatio = DEFAULT_PAINTING_W / DEFAULT_PAINTING_H;
+/* ── DOM refs ────────────────────────────────────────────────────────────── */
+const universeScreen = document.getElementById("universeScreen");
+const gameWrapper    = document.getElementById("gameWrapper");
+const canvas         = document.getElementById("gameCanvas");
+const ctx            = canvas.getContext("2d");
+const startScreen    = document.getElementById("startScreen");
+const loadingScreen  = document.getElementById("loadingScreen");
+const scoreDisplay   = document.getElementById("scoreDisplay");
+const titleDisplay   = document.getElementById("titleDisplay");
+const backBtn        = document.getElementById("backBtn");
 
-function resize() {
-  const maxW = window.innerWidth - 16;
+/* ── State ───────────────────────────────────────────────────────────────── */
+let currentUniverse = null; // "yuli" | "adam"
+let gameRunning     = false;
+let score           = 0;
+
+/* ── Universe selection ──────────────────────────────────────────────────── */
+document.getElementById("yuliCard").addEventListener("click", () => selectUniverse("yuli"));
+document.getElementById("adamCard").addEventListener("click", () => selectUniverse("adam"));
+backBtn.addEventListener("click", backToSelection);
+
+function selectUniverse(which) {
+  currentUniverse = which;
+  gameRunning = false;
+  universeScreen.style.display = "none";
+  gameWrapper.style.display    = "inline-block";
+  loadingScreen.style.display  = "flex";
+  startScreen.style.display    = "none";
+  backBtn.style.display        = "none";
+
+  if (which === "yuli") {
+    document.getElementById("loadTitle").textContent = "🎨 Yuli's Universe";
+    document.getElementById("loadMsg").textContent   = "Loading Yuli's painting…";
+    canvas.className      = "yuli-border";
+    titleDisplay.textContent  = "🎨 Yuli's Universe";
+    titleDisplay.style.color  = "#aac8ff";
+    paintingRatio = YULI_PAINTING_W / YULI_PAINTING_H; // fallback before image loads
+    resizeCanvas();
+    loadYuli();
+  } else {
+    document.getElementById("loadTitle").textContent = "🪐 Adam's Universe";
+    document.getElementById("loadMsg").textContent   = "Loading Adam's painting…";
+    canvas.className      = "adam-border";
+    titleDisplay.textContent  = "🪐 Adam's Universe";
+    titleDisplay.style.color  = "#d7a9f8";
+    paintingRatio = ADAM_PAINTING_W / ADAM_PAINTING_H; // fallback before image loads
+    resizeCanvas();
+    loadAdam();
+  }
+}
+
+function backToSelection() {
+  gameRunning = false;
+  currentUniverse = null;
+  startScreen.style.display   = "none";
+  loadingScreen.style.display = "none";
+  backBtn.style.display       = "none";
+  gameWrapper.style.display   = "none";
+  universeScreen.style.display = "flex";
+}
+
+/* ── Painting native dimensions (fallback aspect ratios before images load) ── */
+const YULI_PAINTING_W = 8192, YULI_PAINTING_H = 6120; // background.png
+const ADAM_PAINTING_W = 5948, ADAM_PAINTING_H = 4900; // background2.png
+
+/* ── Canvas resize (uses current paintingRatio) ──────────────────────────── */
+let paintingRatio = YULI_PAINTING_W / YULI_PAINTING_H;
+
+function resizeCanvas() {
+  const maxW = window.innerWidth  - 16;
   const maxH = window.innerHeight - 16;
   let w = maxW, h = w / paintingRatio;
   if (h > maxH) { h = maxH; w = h * paintingRatio; }
-  canvas.width = Math.floor(w);
+  canvas.width  = Math.floor(w);
   canvas.height = Math.floor(h);
-  canvas.style.width = canvas.width + "px";
+  canvas.style.width  = canvas.width  + "px";
   canvas.style.height = canvas.height + "px";
 }
-resize();
-window.addEventListener("resize", resize);
 
-// ─── Background Image ─────────────────────────────────────────────────────────
-const bgImg = new Image();
-let bgLoaded = false;
-bgImg.onload = function() {
-  bgLoaded = true;
-  paintingRatio = bgImg.naturalWidth / bgImg.naturalHeight;
-  resize(); // re-fit canvas to actual image ratio
-  loadingScreen.style.display = "none";
-  startScreen.style.display = "flex";
-};
-bgImg.onerror = function() {
-  loadingScreen.style.display = "none";
-  startScreen.style.display = "flex";
-};
-bgImg.src = "background.png";
+window.addEventListener("resize", function () {
+  if (!currentUniverse) return;
+  resizeCanvas();
+  if (currentUniverse === "adam") recalcAdamWorld();
+});
 
-// ─── Perspective Constants ────────────────────────────────────────────────────
-// z = 0 → near viewer (bottom of street), z = 1 → far horizon (top of street)
-const HORIZON_Y_FRAC  = 0.60; // screen Y fraction where the vanishing point sits
-const STREET_BTM_FRAC = 0.97; // screen Y fraction at the very bottom of the street
+/* ── Images ──────────────────────────────────────────────────────────────── */
+const bg1 = new Image();
+let   bg1Ready = false;
+const bg2 = new Image();
+let   bg2Ready = false;
 
-// Left/right street bounds (as fraction of canvas width) at near and far
-const STR_L_NEAR = 0.08;
-const STR_R_NEAR = 0.92;
-const STR_L_FAR  = 0.38;
-const STR_R_FAR  = 0.62;
+// Pre-load both in the background so selection thumbnails and game are ready faster
+bg1.src = "background.png";
+bg2.src = "background2.png";
 
-// Avatar base height (pixels) at z = 0 (nearest)
-const AVATAR_BASE_H    = 72;
-const AVATAR_BASE_W    = 28;   // used for aspect ratio only
-const AVATAR_MIN_SCALE = 0.13; // scale factor at z = 1 (horizon)
+/* ── Input ───────────────────────────────────────────────────────────────── */
+const keys = {};
+window.addEventListener("keydown", function (e) {
+  keys[e.code] = true;
+  if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code)) e.preventDefault();
+});
+window.addEventListener("keyup", function (e) { keys[e.code] = false; });
 
-// Walkable depth/lateral limits (avatar cannot leave the visible street area)
-const MIN_DEPTH    = 0.02; // nearest allowed z (just off the bottom edge)
-const MAX_DEPTH    = 0.90; // farthest allowed z (short of the horizon)
-const MIN_LATERAL  = 0.04; // leftmost allowed xFrac (small margin from kerb)
-const MAX_LATERAL  = 0.96; // rightmost allowed xFrac
-
-// Movement speeds (in perspective-space units per frame)
-const DEPTH_SPEED   = 0.016; // how fast z changes
-const LATERAL_SPEED = 0.018; // how fast xFrac changes
-const FRICTION      = 0.80;
-
-// ─── Perspective Helpers ──────────────────────────────────────────────────────
-function getScale(z) {
-  // Inverse-proportion perspective scale: returns 1.0 at z=0 (near) and
-  // AVATAR_MIN_SCALE at z=1 (horizon), following a 1/(1+K·z) falloff that
-  // matches how objects shrink in a real perspective projection.
-  return 1.0 / (1.0 + z * (1.0 / AVATAR_MIN_SCALE - 1.0));
-}
-
-function getScreenPos(z, xFrac) {
-  const horizY  = HORIZON_Y_FRAC  * canvas.height;
-  const bottomY = STREET_BTM_FRAC * canvas.height;
-  const screenY = horizY + (bottomY - horizY) * (1.0 - z);
-
-  const leftBound  = (STR_L_NEAR + (STR_L_FAR - STR_L_NEAR) * z) * canvas.width;
-  const rightBound = (STR_R_NEAR + (STR_R_FAR - STR_R_NEAR) * z) * canvas.width;
-  const screenX    = leftBound + (rightBound - leftBound) * xFrac;
-
-  return { x: screenX, y: screenY };
-}
-
-// ─── Stars (collectibles) ─────────────────────────────────────────────────────
-const starData = [];
-function genStars() {
-  starData.length = 0;
-  const positions = [
-    {z:0.12, xFrac:0.30}, {z:0.12, xFrac:0.70},
-    {z:0.22, xFrac:0.25}, {z:0.22, xFrac:0.75},
-    {z:0.22, xFrac:0.50},
-    {z:0.32, xFrac:0.35}, {z:0.32, xFrac:0.65},
-    {z:0.42, xFrac:0.40}, {z:0.42, xFrac:0.60},
-    {z:0.50, xFrac:0.50},
-    {z:0.52, xFrac:0.32}, {z:0.52, xFrac:0.68},
-    {z:0.62, xFrac:0.42}, {z:0.62, xFrac:0.58},
-    {z:0.70, xFrac:0.50},
-    {z:0.72, xFrac:0.44}, {z:0.72, xFrac:0.56},
-    {z:0.80, xFrac:0.47}, {z:0.80, xFrac:0.53},
-    {z:0.86, xFrac:0.50}
-  ];
-  for (const p of positions) {
-    starData.push({
-      z: p.z, xFrac: p.xFrac,
-      collected: false,
-      angle: Math.random() * Math.PI * 2,
-      pulse: Math.random() * Math.PI * 2
-    });
-  }
-}
-genStars();
-
-// ─── Particles ────────────────────────────────────────────────────────────────
+/* ── Shared particles ────────────────────────────────────────────────────── */
 const particles = [];
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
-const avatar = {
-  z: 0.15,      // depth: 0 = near viewer, 1 = at horizon
-  xFrac: 0.50,  // horizontal position within street bounds (0 = left, 1 = right)
-  vz: 0,        // velocity in depth direction
-  vx: 0,        // velocity in xFrac direction
-  facingRight: true,
-  walkFrame: 0,
-  walkTimer: 0,
-  bobOffset: 0,
-  bobDir: 1,
-  dustTimer: 0,
-  wasMoving: false
-};
-
-// ─── Input ────────────────────────────────────────────────────────────────────
-const keys = {};
-window.addEventListener("keydown", e => {
-  keys[e.code] = true;
-  if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.code)) e.preventDefault();
-});
-window.addEventListener("keyup", e => { keys[e.code] = false; });
-
-// ─── Game State ───────────────────────────────────────────────────────────────
-let gameRunning = false;
-let score = 0;
-
-document.getElementById("playBtn").addEventListener("click", startGame);
-
-function startGame() {
-  startScreen.style.display = "none";
-  gameRunning = true;
-  score = 0;
-  avatar.z    = 0.15;
-  avatar.xFrac = 0.50;
-  avatar.vz   = 0;
-  avatar.vx   = 0;
-  genStars();
-  particles.length = 0;
-  scoreDisplay.textContent = "⭐ 0";
-  requestAnimationFrame(gameLoop);
-}
-
-// ─── Avatar Update ────────────────────────────────────────────────────────────
-function updateAvatar() {
-  const movingLeft  = keys["ArrowLeft"]  || keys["KeyA"];
-  const movingRight = keys["ArrowRight"] || keys["KeyD"];
-  const movingFwd   = keys["ArrowUp"]    || keys["KeyW"];
-  const movingBack  = keys["ArrowDown"]  || keys["KeyS"];
-
-  if (movingFwd)   avatar.vz += DEPTH_SPEED * 0.4;
-  if (movingBack)  avatar.vz -= DEPTH_SPEED * 0.4;
-  if (movingLeft)  { avatar.vx -= LATERAL_SPEED * 0.4; avatar.facingRight = false; }
-  if (movingRight) { avatar.vx += LATERAL_SPEED * 0.4; avatar.facingRight = true;  }
-
-  avatar.vz *= FRICTION;
-  avatar.vx *= FRICTION;
-  if (Math.abs(avatar.vz) < 0.0003) avatar.vz = 0;
-  if (Math.abs(avatar.vx) < 0.0003) avatar.vx = 0;
-
-  avatar.z    += avatar.vz;
-  avatar.xFrac += avatar.vx;
-
-  // Clamp depth — stay on the street (not past the horizon)
-  if (avatar.z < MIN_DEPTH) { avatar.z = MIN_DEPTH; avatar.vz = 0; }
-  if (avatar.z > MAX_DEPTH) { avatar.z = MAX_DEPTH; avatar.vz = 0; }
-
-  // Clamp lateral — stay within street bounds
-  if (avatar.xFrac < MIN_LATERAL) { avatar.xFrac = MIN_LATERAL; avatar.vx = 0; }
-  if (avatar.xFrac > MAX_LATERAL) { avatar.xFrac = MAX_LATERAL; avatar.vx = 0; }
-
-  const isMoving = movingLeft || movingRight || movingFwd || movingBack;
-
-  // Walk animation
-  avatar.walkTimer += isMoving ? 1 : 0;
-  if (avatar.walkTimer > 8) { avatar.walkTimer = 0; avatar.walkFrame = (avatar.walkFrame + 1) % 4; }
-
-  // Idle bob
-  if (!isMoving) {
-    avatar.bobOffset += 0.06 * avatar.bobDir;
-    if (Math.abs(avatar.bobOffset) > 1.5) avatar.bobDir *= -1;
-  } else {
-    avatar.bobOffset *= 0.85;
-  }
-
-  // Dust puffs while walking
-  if (isMoving) {
-    avatar.dustTimer++;
-    if (avatar.dustTimer > 9) {
-      avatar.dustTimer = 0;
-      const pos = getScreenPos(avatar.z, avatar.xFrac);
-      const scale = getScale(avatar.z);
-      spawnDust(pos.x, pos.y, scale);
-    }
-  } else {
-    avatar.dustTimer = 0;
-  }
-  avatar.wasMoving = isMoving;
-}
-
-// ─── Particles ────────────────────────────────────────────────────────────────
 function spawnDust(x, y, scale) {
   for (let i = 0; i < 3; i++) {
     particles.push({
-      type: "dust",
-      x, y,
-      vx: (Math.random() - 0.5) * 2.0 * scale,
-      vy: -Math.random() * 1.2 * scale - 0.3,
-      life: 1, maxLife: 1,
-      size: (3 + Math.random() * 3) * scale,
+      type: "dust", x, y,
+      vx: (Math.random() - .5) * 2.0 * scale,
+      vy: -Math.random() * 1.2 * scale - .3,
+      life: 1, size: (3 + Math.random() * 3) * scale,
       color: "rgba(180,160,120,"
     });
   }
@@ -391,15 +358,13 @@ function spawnDust(x, y, scale) {
 
 function spawnSparkles(x, y, scale) {
   for (let i = 0; i < 18; i++) {
-    const angle = (i / 18) * Math.PI * 2;
-    const speed = (2 + Math.random() * 3) * Math.max(scale, 0.3);
+    const ang = (i / 18) * Math.PI * 2;
+    const spd = (2 + Math.random() * 3) * Math.max(scale, .3);
     particles.push({
-      type: "sparkle",
-      x, y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - 1.5,
-      life: 1, maxLife: 1,
-      size: (3 + Math.random() * 4) * Math.max(scale, 0.3),
+      type: "sparkle", x, y,
+      vx: Math.cos(ang) * spd,
+      vy: Math.sin(ang) * spd - 1.5,
+      life: 1, size: (3 + Math.random() * 4) * Math.max(scale, .3),
       color: ["#ffe566","#ffcc00","#fff","#ffaa00","#aaffee"][Math.floor(Math.random() * 5)]
     });
   }
@@ -408,71 +373,53 @@ function spawnSparkles(x, y, scale) {
 function updateParticles() {
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
-    p.x  += p.vx;
-    p.y  += p.vy;
-    p.vy += 0.08;
-    p.vx *= 0.92;
-    p.life -= 0.04;
+    p.x += p.vx; p.y += p.vy;
+    p.vy += .08; p.vx *= .92;
+    p.life -= .04;
     if (p.life <= 0) particles.splice(i, 1);
   }
 }
 
-// ─── Star Collection ──────────────────────────────────────────────────────────
-function checkStarCollection() {
-  for (const s of starData) {
-    if (s.collected) continue;
-
-    const dz    = Math.abs(avatar.z    - s.z);
-    const dxFrac = Math.abs(avatar.xFrac - s.xFrac);
-
-    // Collect when close enough in both depth and lateral dimensions
-    if (dz < 0.06 && dxFrac < 0.08) {
-      s.collected = true;
-      score++;
-      scoreDisplay.textContent = `⭐ ${score}`;
-      const pos   = getScreenPos(s.z, s.xFrac);
-      const scale = getScale(s.z);
-      spawnSparkles(pos.x, pos.y, scale);
+function drawParticles() {
+  for (const p of particles) {
+    const a = Math.max(0, p.life);
+    if (p.type === "dust") {
+      ctx.fillStyle = p.color + a.toFixed(2) + ")";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * a, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.fillStyle = p.color;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * a, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     }
   }
 }
 
-// ─── Drawing Functions ────────────────────────────────────────────────────────
-
-function drawBackground() {
-  if (bgLoaded) {
-    // Fill the canvas with the full painting — no stretching because canvas
-    // is already sized to match the painting's aspect ratio.
-    ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
-  } else {
-    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    grad.addColorStop(0, "#b8d8f8");
-    grad.addColorStop(1, "#e8f4ff");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-  }
-}
-
-function drawAvatar(a) {
-  const pos   = getScreenPos(a.z, a.xFrac);
-  const scale = getScale(a.z);
-
-  const ah  = AVATAR_BASE_H * scale;
-  const aw  = ah * (AVATAR_BASE_W / AVATAR_BASE_H);
-  const cx  = pos.x;
-  const bot = pos.y + a.bobOffset * scale; // feet touch the ground point
+/* ── Shared avatar drawing ───────────────────────────────────────────────── */
+// cx = feet center X (screen), botY = feet Y (screen)
+// scale = size multiplier, facingRight, walkFrame (0-3), bobOffset
+function drawAvatarAt(cx, botY, scale, facingRight, walkFrame, bobOffset) {
+  const ah  = 72 * scale;
+  const aw  = ah * (28 / 72);
+  const bot = botY + bobOffset * scale;
   const top = bot - ah;
-  const dir = a.facingRight ? 1 : -1;
-
-  const legSwing = Math.sin(a.walkFrame / 4 * Math.PI * 2) * 10 * scale;
+  const dir = facingRight ? 1 : -1;
+  const legSwing = Math.sin(walkFrame / 4 * Math.PI * 2) * 10 * scale;
 
   ctx.save();
 
-  // Shadow (scales and fades with depth)
-  ctx.globalAlpha = 0.22 * (1 - a.z * 0.6);
+  // Shadow
+  ctx.globalAlpha = .22;
   ctx.fillStyle = "rgba(0,0,50,1)";
   ctx.beginPath();
-  ctx.ellipse(cx, bot + 2 * scale, aw * 0.65, 4 * scale, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, bot + 2 * scale, aw * .65, 4 * scale, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.globalAlpha = 1;
 
@@ -481,209 +428,583 @@ function drawAvatar(a) {
   ctx.lineWidth = Math.max(1, 5 * scale);
   ctx.lineCap = "round";
   ctx.beginPath();
-  ctx.moveTo(cx - 6 * scale, top + ah * 0.65);
-  ctx.lineTo(cx - 6 * scale - legSwing * 0.4, bot + 2 * scale);
+  ctx.moveTo(cx - 6*scale, top+ah*.65);
+  ctx.lineTo(cx - 6*scale - legSwing*.4, bot + 2*scale);
   ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(cx + 6 * scale, top + ah * 0.65);
-  ctx.lineTo(cx + 6 * scale + legSwing * 0.4, bot + 2 * scale);
+  ctx.moveTo(cx + 6*scale, top+ah*.65);
+  ctx.lineTo(cx + 6*scale + legSwing*.4, bot + 2*scale);
   ctx.stroke();
 
   // Body
   ctx.fillStyle = "#6655dd";
   ctx.beginPath();
-  ctx.roundRect(cx - aw / 2 + 3 * scale, top + ah * 0.35, aw - 6 * scale, ah * 0.35, 6 * scale);
+  ctx.roundRect(cx - aw/2 + 3*scale, top+ah*.35, aw - 6*scale, ah*.35, 6*scale);
   ctx.fill();
   ctx.strokeStyle = "#4433aa";
-  ctx.lineWidth = Math.max(0.5, 1.5 * scale);
+  ctx.lineWidth = Math.max(.5, 1.5*scale);
   ctx.stroke();
 
   // Outfit detail
   ctx.fillStyle = "#ffe566";
-  ctx.fillRect(cx - aw / 2 + 5 * scale, top + ah * 0.38, 5 * scale, ah * 0.2);
+  ctx.fillRect(cx - aw/2 + 5*scale, top+ah*.38, 5*scale, ah*.2);
 
   // Arms
   ctx.strokeStyle = "#5544cc";
-  ctx.lineWidth = Math.max(1, 5 * scale);
+  ctx.lineWidth = Math.max(1, 5*scale);
   ctx.lineCap = "round";
-  const armSwing = Math.sin(a.walkFrame / 4 * Math.PI * 2 + Math.PI) * 8 * scale;
+  const armSwing = Math.sin(walkFrame / 4 * Math.PI * 2 + Math.PI) * 8 * scale;
   ctx.beginPath();
-  ctx.moveTo(cx - aw / 2 + 4 * scale, top + ah * 0.38);
-  ctx.lineTo(cx - aw / 2 + 4 * scale - dir * 8 * scale - armSwing * 0.3, top + ah * 0.58);
+  ctx.moveTo(cx - aw/2+4*scale, top+ah*.38);
+  ctx.lineTo(cx - aw/2+4*scale - dir*8*scale - armSwing*.3, top+ah*.58);
   ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(cx + aw / 2 - 4 * scale, top + ah * 0.38);
-  ctx.lineTo(cx + aw / 2 - 4 * scale + dir * 8 * scale + armSwing * 0.3, top + ah * 0.58);
+  ctx.moveTo(cx + aw/2-4*scale, top+ah*.38);
+  ctx.lineTo(cx + aw/2-4*scale + dir*8*scale + armSwing*.3, top+ah*.58);
   ctx.stroke();
 
   // Head
-  const headR = aw * 0.42;
+  const headR = aw * .42;
   ctx.fillStyle = "#ffddb0";
   ctx.beginPath();
-  ctx.arc(cx, top + ah * 0.22, headR, 0, Math.PI * 2);
+  ctx.arc(cx, top+ah*.22, headR, 0, Math.PI*2);
   ctx.fill();
   ctx.strokeStyle = "#cc9966";
-  ctx.lineWidth = Math.max(0.5, 1.5 * scale);
+  ctx.lineWidth = Math.max(.5, 1.5*scale);
   ctx.stroke();
 
   // Hair
   ctx.fillStyle = "#8833aa";
   ctx.beginPath();
-  ctx.arc(cx, top + ah * 0.14, headR, Math.PI, Math.PI * 2);
+  ctx.arc(cx, top+ah*.14, headR, Math.PI, Math.PI*2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(cx + dir * 6 * scale, top + ah * 0.06, 5 * scale, 0, Math.PI * 2);
+  ctx.arc(cx + dir*6*scale, top+ah*.06, 5*scale, 0, Math.PI*2);
   ctx.fill();
 
   // Eyes
-  const eyeR = Math.max(0.5, 2.2 * scale);
+  const eyeR = Math.max(.5, 2.2*scale);
   ctx.fillStyle = "#220044";
   ctx.beginPath();
-  ctx.arc(cx - dir * 3 * scale - 4 * scale, top + ah * 0.2, eyeR, 0, Math.PI * 2);
+  ctx.arc(cx - dir*3*scale - 4*scale, top+ah*.2, eyeR, 0, Math.PI*2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(cx - dir * 3 * scale + 4 * scale, top + ah * 0.2, eyeR, 0, Math.PI * 2);
+  ctx.arc(cx - dir*3*scale + 4*scale, top+ah*.2, eyeR, 0, Math.PI*2);
   ctx.fill();
   ctx.fillStyle = "#fff";
   ctx.beginPath();
-  ctx.arc(cx - dir * 3 * scale - 3 * scale, top + ah * 0.19, Math.max(0.3, 0.9 * scale), 0, Math.PI * 2);
+  ctx.arc(cx - dir*3*scale - 3*scale, top+ah*.19, Math.max(.3, .9*scale), 0, Math.PI*2);
   ctx.fill();
 
   // Smile
   ctx.strokeStyle = "#cc6644";
-  ctx.lineWidth = Math.max(0.5, 1.8 * scale);
+  ctx.lineWidth = Math.max(.5, 1.8*scale);
   ctx.beginPath();
-  ctx.arc(cx, top + ah * 0.26, 4 * scale, 0.2, Math.PI - 0.2);
+  ctx.arc(cx, top+ah*.26, 4*scale, .2, Math.PI-.2);
   ctx.stroke();
 
   // Rosy cheeks
-  ctx.fillStyle = "rgba(255,120,100,0.35)";
+  ctx.fillStyle = "rgba(255,120,100,.35)";
   ctx.beginPath();
-  ctx.ellipse(cx - 7 * scale, top + ah * 0.25, 4 * scale, 3 * scale, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx - 7*scale, top+ah*.25, 4*scale, 3*scale, 0, 0, Math.PI*2);
   ctx.fill();
   ctx.beginPath();
-  ctx.ellipse(cx + 7 * scale, top + ah * 0.25, 4 * scale, 3 * scale, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx + 7*scale, top+ah*.25, 4*scale, 3*scale, 0, 0, Math.PI*2);
   ctx.fill();
 
   ctx.restore();
 }
 
-function drawStar(s) {
-  if (s.collected) return;
-
-  const pos   = getScreenPos(s.z, s.xFrac);
-  const scale = getScale(s.z);
-  const alpha = 1.0 - s.z * 0.35; // slightly faded at distance
-
-  s.angle += 0.04;
-  s.pulse += 0.07;
-  const pScale = 1 + Math.sin(s.pulse) * 0.12;
-  const r = 13 * scale * pScale;
+/* ── Shared star drawing (screen coordinates) ────────────────────────────── */
+function drawStarAt(sx, sy, scale, starObj) {
+  if (starObj.collected) return;
+  starObj.angle += .04;
+  starObj.pulse += .07;
+  const ps = 1 + Math.sin(starObj.pulse) * .12;
+  const r  = 13 * scale * ps;
 
   ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.translate(pos.x, pos.y);
-  ctx.rotate(s.angle);
+  ctx.translate(sx, sy);
+  ctx.rotate(starObj.angle);
 
-  // Glow
   const glowR = r + 6 * scale;
-  const glow = ctx.createRadialGradient(0, 0, 2 * scale, 0, 0, glowR);
-  glow.addColorStop(0, "rgba(255,230,80,0.6)");
+  const glow  = ctx.createRadialGradient(0, 0, 2*scale, 0, 0, glowR);
+  glow.addColorStop(0, "rgba(255,230,80,.6)");
   glow.addColorStop(1, "rgba(255,200,0,0)");
   ctx.fillStyle = glow;
   ctx.beginPath();
-  ctx.arc(0, 0, glowR, 0, Math.PI * 2);
+  ctx.arc(0, 0, glowR, 0, Math.PI*2);
   ctx.fill();
 
-  // 5-point star shape
   ctx.beginPath();
   for (let i = 0; i < 10; i++) {
-    const ang = (i / 10) * Math.PI * 2 - Math.PI / 2;
-    const rad = i % 2 === 0 ? r : r * 0.42;
-    if (i === 0) ctx.moveTo(Math.cos(ang) * rad, Math.sin(ang) * rad);
-    else         ctx.lineTo(Math.cos(ang) * rad, Math.sin(ang) * rad);
+    const a   = (i / 10) * Math.PI * 2 - Math.PI / 2;
+    const rad = i % 2 === 0 ? r : r * .42;
+    i === 0 ? ctx.moveTo(Math.cos(a)*rad, Math.sin(a)*rad)
+             : ctx.lineTo(Math.cos(a)*rad, Math.sin(a)*rad);
   }
   ctx.closePath();
-  ctx.fillStyle = "#ffe566";
+  ctx.fillStyle   = "#ffe566";
   ctx.fill();
   ctx.strokeStyle = "#cc8800";
-  ctx.lineWidth = Math.max(0.5, 1.5 * scale);
+  ctx.lineWidth   = Math.max(.5, 1.5*scale);
   ctx.stroke();
-
   ctx.restore();
 }
 
-function drawParticles() {
-  for (const p of particles) {
-    const alpha = Math.max(0, p.life);
-    if (p.type === "dust") {
-      ctx.fillStyle = p.color + alpha.toFixed(2) + ")";
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
-      ctx.fill();
-    } else {
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = p.color;
-      ctx.shadowColor = p.color;
-      ctx.shadowBlur = 8;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
+/* ══════════════════════════════════════════════════════════════════════════
+   YULI'S UNIVERSE — 3-D Perspective Walking (unchanged from PR #3)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+// ─── Perspective constants ─────────────────────────────────────────────────
+const HORIZON_Y_FRAC  = 0.60;
+const STREET_BTM_FRAC = 0.97;
+const STR_L_NEAR = 0.08, STR_R_NEAR = 0.92;
+const STR_L_FAR  = 0.38, STR_R_FAR  = 0.62;
+const AVATAR_BASE_H    = 72;
+const AVATAR_BASE_W    = 28;
+const AVATAR_MIN_SCALE = 0.13;
+const MIN_DEPTH   = 0.02, MAX_DEPTH   = 0.90;
+const MIN_LATERAL = 0.04, MAX_LATERAL = 0.96;
+const DEPTH_SPEED   = 0.016;
+const LATERAL_SPEED = 0.018;
+const FRICTION      = 0.80;
+
+function yuliScale(z) {
+  return 1.0 / (1.0 + z * (1.0 / AVATAR_MIN_SCALE - 1.0));
+}
+
+function yuliPos(z, xFrac) {
+  const horizY  = HORIZON_Y_FRAC  * canvas.height;
+  const bottomY = STREET_BTM_FRAC * canvas.height;
+  const screenY = horizY + (bottomY - horizY) * (1.0 - z);
+  const leftBound  = (STR_L_NEAR + (STR_L_FAR - STR_L_NEAR) * z) * canvas.width;
+  const rightBound = (STR_R_NEAR + (STR_R_FAR - STR_R_NEAR) * z) * canvas.width;
+  return { x: leftBound + (rightBound - leftBound) * xFrac, y: screenY };
+}
+
+// ─── Yuli's stars ──────────────────────────────────────────────────────────
+const yuliStars = [];
+function genYuliStars() {
+  yuliStars.length = 0;
+  const pos = [
+    {z:.12,xFrac:.30},{z:.12,xFrac:.70},
+    {z:.22,xFrac:.25},{z:.22,xFrac:.75},{z:.22,xFrac:.50},
+    {z:.32,xFrac:.35},{z:.32,xFrac:.65},
+    {z:.42,xFrac:.40},{z:.42,xFrac:.60},{z:.50,xFrac:.50},
+    {z:.52,xFrac:.32},{z:.52,xFrac:.68},
+    {z:.62,xFrac:.42},{z:.62,xFrac:.58},{z:.70,xFrac:.50},
+    {z:.72,xFrac:.44},{z:.72,xFrac:.56},
+    {z:.80,xFrac:.47},{z:.80,xFrac:.53},{z:.86,xFrac:.50}
+  ];
+  for (const p of pos)
+    yuliStars.push({ ...p, collected:false, angle:Math.random()*Math.PI*2, pulse:Math.random()*Math.PI*2 });
+}
+
+// ─── Yuli's avatar ─────────────────────────────────────────────────────────
+const yuliAv = {
+  z:.15, xFrac:.50, vz:0, vx:0,
+  facingRight:true, walkFrame:0, walkTimer:0,
+  bobOffset:0, bobDir:1, dustTimer:0
+};
+
+function updateYuliAvatar() {
+  const L = keys["ArrowLeft"] ||keys["KeyA"];
+  const R = keys["ArrowRight"]||keys["KeyD"];
+  const F = keys["ArrowUp"]   ||keys["KeyW"];
+  const B = keys["ArrowDown"] ||keys["KeyS"];
+
+  if (F) yuliAv.vz += DEPTH_SPEED * .4;
+  if (B) yuliAv.vz -= DEPTH_SPEED * .4;
+  if (L) { yuliAv.vx -= LATERAL_SPEED * .4; yuliAv.facingRight = false; }
+  if (R) { yuliAv.vx += LATERAL_SPEED * .4; yuliAv.facingRight = true; }
+
+  yuliAv.vz *= FRICTION; yuliAv.vx *= FRICTION;
+  if (Math.abs(yuliAv.vz) < .0003) yuliAv.vz = 0;
+  if (Math.abs(yuliAv.vx) < .0003) yuliAv.vx = 0;
+
+  yuliAv.z    += yuliAv.vz;
+  yuliAv.xFrac += yuliAv.vx;
+
+  if (yuliAv.z    < MIN_DEPTH)   { yuliAv.z    = MIN_DEPTH;   yuliAv.vz = 0; }
+  if (yuliAv.z    > MAX_DEPTH)   { yuliAv.z    = MAX_DEPTH;   yuliAv.vz = 0; }
+  if (yuliAv.xFrac < MIN_LATERAL){ yuliAv.xFrac = MIN_LATERAL; yuliAv.vx = 0; }
+  if (yuliAv.xFrac > MAX_LATERAL){ yuliAv.xFrac = MAX_LATERAL; yuliAv.vx = 0; }
+
+  const mv = L||R||F||B;
+  yuliAv.walkTimer += mv ? 1 : 0;
+  if (yuliAv.walkTimer > 8) { yuliAv.walkTimer = 0; yuliAv.walkFrame = (yuliAv.walkFrame+1)%4; }
+  if (!mv) {
+    yuliAv.bobOffset += .06 * yuliAv.bobDir;
+    if (Math.abs(yuliAv.bobOffset) > 1.5) yuliAv.bobDir *= -1;
+  } else {
+    yuliAv.bobOffset *= .85;
+  }
+  if (mv) {
+    yuliAv.dustTimer++;
+    if (yuliAv.dustTimer > 9) {
+      yuliAv.dustTimer = 0;
+      const p = yuliPos(yuliAv.z, yuliAv.xFrac);
+      spawnDust(p.x, p.y, yuliScale(yuliAv.z));
+    }
+  } else {
+    yuliAv.dustTimer = 0;
+  }
+}
+
+function checkYuliStars() {
+  for (const s of yuliStars) {
+    if (s.collected) continue;
+    if (Math.abs(yuliAv.z - s.z) < .06 && Math.abs(yuliAv.xFrac - s.xFrac) < .08) {
+      s.collected = true; score++;
+      scoreDisplay.textContent = "⭐ " + score;
+      const p  = yuliPos(s.z, s.xFrac);
+      spawnSparkles(p.x, p.y, yuliScale(s.z));
     }
   }
 }
 
-function drawTitleAndScore() {
-  ctx.save();
-  ctx.font = `bold ${Math.max(14, canvas.width * 0.022)}px "Comic Sans MS", cursive`;
-  ctx.fillStyle = "#aac8ff";
-  ctx.shadowColor = "#000";
-  ctx.shadowBlur = 4;
-  ctx.fillText("🎨 Yuli's Universe", 12, 28);
-
-  ctx.font = `bold ${Math.max(14, canvas.width * 0.024)}px "Comic Sans MS", cursive`;
-  ctx.fillStyle = "#ffe566";
-  ctx.textAlign = "right";
-  ctx.fillText(`⭐ ${score}`, canvas.width - 12, 28);
-  ctx.restore();
+// ─── Yuli loader ───────────────────────────────────────────────────────────
+function loadYuli() {
+  if (bg1Ready) { onYuliReady(); return; }
+  // Image already finished loading (cached / very fast network)
+  if (bg1.complete) {
+    if (bg1.naturalWidth) {
+      bg1Ready = true;
+      paintingRatio = bg1.naturalWidth / bg1.naturalHeight;
+      resizeCanvas();
+    }
+    onYuliReady();
+    return;
+  }
+  // Still loading – wait for onload / onerror
+  bg1.onload = function () {
+    bg1Ready = true;
+    paintingRatio = bg1.naturalWidth / bg1.naturalHeight;
+    resizeCanvas();
+    onYuliReady();
+  };
+  bg1.onerror = onYuliReady; // show start screen even if image fails
 }
 
-// ─── Main Game Loop ────────────────────────────────────────────────────────────
-let lastTime = 0;
+function onYuliReady() {
+  loadingScreen.style.display = "none";
+  startScreen.className = "yuli-ss";
+  document.getElementById("ssTitle").textContent = "🌟 Yuli's Universe 🌟";
+  document.getElementById("ssSub").textContent   = "Inspired by Yuli's beautiful city painting ✨";
+  document.getElementById("ssInstr").innerHTML   =
+    '<span class="k">Forward / Back:</span> ↑ ↓ or W S<br/>' +
+    '<span class="k">Left / Right:</span> ← → or A D<br/>' +
+    '<span class="k">Collect</span> all the ⭐ stars!<br/>' +
+    'Walk deep into Yuli\'s city! 🏙️';
+  startScreen.style.display = "flex";
+  backBtn.style.display = "block";
+}
 
-function gameLoop(timestamp) {
-  if (!gameRunning) return;
-  lastTime = timestamp;
-
-  updateAvatar();
+// ─── Yuli game loop ─────────────────────────────────────────────────────────
+function yuliLoop() {
+  if (!gameRunning || currentUniverse !== "yuli") return;
+  updateYuliAvatar();
   updateParticles();
-  checkStarCollection();
+  checkYuliStars();
 
-  // Draw the full painting as background (no camera scroll)
-  drawBackground();
-
-  // Collect all scene objects and sort by z (draw furthest first)
-  const objects = [];
-
-  for (const s of starData) {
-    if (!s.collected) objects.push({ type: "star", z: s.z, ref: s });
+  // Draw painting (fills canvas; canvas is sized to painting ratio → no stretch)
+  if (bg1Ready) {
+    ctx.drawImage(bg1, 0, 0, canvas.width, canvas.height);
+  } else {
+    const g = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    g.addColorStop(0, "#b8d8f8"); g.addColorStop(1, "#e8f4ff");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
-  objects.push({ type: "avatar", z: avatar.z });
 
-  objects.sort((a, b) => b.z - a.z); // furthest first
-
-  for (const obj of objects) {
-    if (obj.type === "star")   drawStar(obj.ref);
-    else                       drawAvatar(avatar);
+  // Draw stars + avatar sorted by z (furthest first)
+  const objs = yuliStars.filter(s => !s.collected).map(s => ({t:"star", z:s.z, ref:s}));
+  objs.push({t:"av", z:yuliAv.z});
+  objs.sort((a, b) => b.z - a.z);
+  for (const o of objs) {
+    if (o.t === "star") {
+      const p = yuliPos(o.ref.z, o.ref.xFrac);
+      drawStarAt(p.x, p.y, yuliScale(o.ref.z), o.ref);
+    } else {
+      const p = yuliPos(yuliAv.z, yuliAv.xFrac);
+      drawAvatarAt(p.x, p.y, yuliScale(yuliAv.z), yuliAv.facingRight, yuliAv.walkFrame, yuliAv.bobOffset);
+    }
   }
+  drawParticles();
+
+  // Canvas HUD
+  ctx.save();
+  ctx.font = "bold " + Math.max(14, canvas.width * .022) + "px \"Comic Sans MS\",cursive";
+  ctx.fillStyle = "#aac8ff"; ctx.shadowColor = "#000"; ctx.shadowBlur = 4;
+  ctx.fillText("🎨 Yuli's Universe", 12, 28);
+  ctx.font = "bold " + Math.max(14, canvas.width * .024) + "px \"Comic Sans MS\",cursive";
+  ctx.fillStyle = "#ffe566"; ctx.textAlign = "right";
+  ctx.fillText("⭐ " + score, canvas.width - 12, 28);
+  ctx.restore();
+
+  requestAnimationFrame(yuliLoop);
+}
+
+function startYuli() {
+  startScreen.style.display = "none";
+  score = 0; scoreDisplay.textContent = "⭐ 0";
+  yuliAv.z = .15; yuliAv.xFrac = .50; yuliAv.vz = 0; yuliAv.vx = 0;
+  genYuliStars();
+  particles.length = 0;
+  gameRunning = true;
+  requestAnimationFrame(yuliLoop);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ADAM'S UNIVERSE — Side-Scroller Platformer
+   ══════════════════════════════════════════════════════════════════════════ */
+
+// ─── World dimensions ──────────────────────────────────────────────────────
+// Adam's world is wider than the viewport so the camera scrolls left/right.
+// adamWorldW is in canvas-pixel space.
+let adamWorldW = 3200;
+let adamCamX   = 0;
+
+function recalcAdamWorld() {
+  // Natural display width of the painting at canvas.height (correct vertical scaling)
+  const naturalDisplayW = bg2Ready
+    ? (bg2.naturalWidth / bg2.naturalHeight * canvas.height)
+    : canvas.width;
+  // World is at least ADAM_WORLD_MULTIPLIER× the viewport so there is scrolling
+  adamWorldW = Math.max(naturalDisplayW, canvas.width * ADAM_WORLD_MULTIPLIER);
+  adamWorldW = Math.round(adamWorldW);
+}
+
+function adamGroundY() { return Math.round(canvas.height * ADAM_GROUND_Y_FRAC); }
+
+// ─── Adam's avatar ─────────────────────────────────────────────────────────
+const adamAv = {
+  x: 0, y: 0,
+  vx: 0, vy: 0,
+  onGround: false,
+  facingRight: true,
+  walkFrame: 0, walkTimer: 0,
+  bobOffset: 0, bobDir: 1,
+  dustTimer: 0
+};
+
+const ADAM_GRAVITY        = .44;
+const ADAM_JUMP_VEL       = -13;
+const ADAM_ACCEL          = .8;
+const ADAM_FRICTION       = .82;
+const ADAM_AVATAR_HW      = 24; // avatar half-width for world-edge clamping
+const ADAM_STAR_COUNT     = 18;
+const ADAM_STAR_RADIUS    = 42; // collection radius in pixels
+const ADAM_GROUND_Y_FRAC  = .87; // fraction of canvas height where ground sits
+const ADAM_WORLD_MULTIPLIER = 2.2; // minimum world width as a multiple of canvas.width
+
+// ─── Adam's stars ──────────────────────────────────────────────────────────
+const adamStars = [];
+function genAdamStars() {
+  adamStars.length = 0;
+  const count = ADAM_STAR_COUNT;
+  for (let i = 0; i < count; i++) {
+    const xFrac = (i + .5) / count;
+    // three height levels: near ground, mid-air, high sky
+    const level = i % 3;
+    const yFrac = level === 0 ? .78 : level === 1 ? .56 : .34;
+    adamStars.push({
+      wx: xFrac * adamWorldW,        // world x
+      wy: yFrac * canvas.height,     // screen y (fixed, no vertical scroll)
+      collected: false,
+      angle: Math.random() * Math.PI * 2,
+      pulse: Math.random() * Math.PI * 2
+    });
+  }
+}
+
+// ─── Adam loader ───────────────────────────────────────────────────────────
+function loadAdam() {
+  if (bg2Ready) { recalcAdamWorld(); onAdamReady(); return; }
+  // Image already finished loading (cached / very fast network)
+  if (bg2.complete) {
+    if (bg2.naturalWidth) {
+      bg2Ready = true;
+      paintingRatio = bg2.naturalWidth / bg2.naturalHeight;
+      resizeCanvas();
+    }
+    recalcAdamWorld();
+    onAdamReady();
+    return;
+  }
+  // Still loading – wait for onload / onerror
+  bg2.onload = function () {
+    bg2Ready = true;
+    paintingRatio = bg2.naturalWidth / bg2.naturalHeight;
+    resizeCanvas();
+    recalcAdamWorld();
+    onAdamReady();
+  };
+  bg2.onerror = function () { recalcAdamWorld(); onAdamReady(); };
+}
+
+function onAdamReady() {
+  loadingScreen.style.display = "none";
+  startScreen.className = "adam-ss";
+  document.getElementById("ssTitle").textContent = "🪐 Adam's Universe 🪐";
+  document.getElementById("ssSub").textContent   = "Adam's magical world awaits ✨";
+  document.getElementById("ssInstr").innerHTML   =
+    '<span class="k">Left / Right:</span> ← → or A D<br/>' +
+    '<span class="k">Jump:</span> ↑ or W or Space<br/>' +
+    '<span class="k">Collect</span> all the ⭐ stars!<br/>' +
+    "Explore Adam's magic world! 🪐";
+  startScreen.style.display = "flex";
+  backBtn.style.display = "block";
+}
+
+// ─── Adam update ───────────────────────────────────────────────────────────
+function updateAdamAvatar() {
+  const L = keys["ArrowLeft"] || keys["KeyA"];
+  const R = keys["ArrowRight"]|| keys["KeyD"];
+  const J = keys["ArrowUp"]   || keys["KeyW"] || keys["Space"];
+
+  if (L) { adamAv.vx -= ADAM_ACCEL; adamAv.facingRight = false; }
+  if (R) { adamAv.vx += ADAM_ACCEL; adamAv.facingRight = true; }
+  adamAv.vx *= ADAM_FRICTION;
+  if (Math.abs(adamAv.vx) < .1) adamAv.vx = 0;
+
+  if (J && adamAv.onGround) {
+    adamAv.vy = ADAM_JUMP_VEL;
+    adamAv.onGround = false;
+  }
+  adamAv.vy += ADAM_GRAVITY;
+
+  adamAv.x += adamAv.vx;
+  adamAv.y += adamAv.vy;
+
+  // Ground collision
+  const gnd = adamGroundY();
+  if (adamAv.y >= gnd) {
+    adamAv.y = gnd;
+    adamAv.vy = 0;
+    adamAv.onGround = true;
+  } else {
+    adamAv.onGround = false;
+  }
+
+  // World bounds
+  if (adamAv.x < ADAM_AVATAR_HW)              { adamAv.x = ADAM_AVATAR_HW;              adamAv.vx = 0; }
+  if (adamAv.x > adamWorldW - ADAM_AVATAR_HW) { adamAv.x = adamWorldW - ADAM_AVATAR_HW; adamAv.vx = 0; }
+
+  // Camera follows avatar (smooth clamp)
+  const targetCam = adamAv.x - canvas.width / 2;
+  adamCamX = Math.max(0, Math.min(adamWorldW - canvas.width, targetCam));
+
+  // Walk animation
+  const mv = L || R;
+  adamAv.walkTimer += mv ? 1 : 0;
+  if (adamAv.walkTimer > 8) { adamAv.walkTimer = 0; adamAv.walkFrame = (adamAv.walkFrame+1)%4; }
+
+  // Idle bob
+  if (!mv && adamAv.onGround) {
+    adamAv.bobOffset += .06 * adamAv.bobDir;
+    if (Math.abs(adamAv.bobOffset) > 1.5) adamAv.bobDir *= -1;
+  } else {
+    adamAv.bobOffset *= .85;
+  }
+
+  // Dust puffs
+  if (mv && adamAv.onGround) {
+    adamAv.dustTimer++;
+    if (adamAv.dustTimer > 9) {
+      adamAv.dustTimer = 0;
+      spawnDust(adamAv.x - adamCamX, adamAv.y, 1.0);
+    }
+  } else {
+    adamAv.dustTimer = 0;
+  }
+}
+
+function checkAdamStars() {
+  for (const s of adamStars) {
+    if (s.collected) continue;
+    if (Math.abs(adamAv.x - s.wx) < ADAM_STAR_RADIUS && Math.abs(adamAv.y - s.wy) < ADAM_STAR_RADIUS) {
+      s.collected = true; score++;
+      scoreDisplay.textContent = "⭐ " + score;
+      spawnSparkles(s.wx - adamCamX, s.wy, 1.0);
+    }
+  }
+}
+
+// ─── Adam background drawing ───────────────────────────────────────────────
+function drawAdamBackground() {
+  if (!bg2Ready) {
+    // Fallback sky gradient
+    const g = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    g.addColorStop(0, "#1a0535");
+    g.addColorStop(.6, "#3a1060");
+    g.addColorStop(1, "#6b3a1f");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    return;
+  }
+  // Scroll through the painting horizontally.
+  // We show the portion of the painting that corresponds to the camera position.
+  // srcX / bg2.naturalWidth  =  adamCamX / adamWorldW
+  // srcW / bg2.naturalWidth  =  canvas.width / adamWorldW
+  const srcX = (adamCamX / adamWorldW) * bg2.naturalWidth;
+  const srcW = (canvas.width / adamWorldW) * bg2.naturalWidth;
+  ctx.drawImage(bg2, srcX, 0, srcW, bg2.naturalHeight,
+                      0,   0, canvas.width, canvas.height);
+}
+
+// ─── Adam game loop ─────────────────────────────────────────────────────────
+function adamLoop() {
+  if (!gameRunning || currentUniverse !== "adam") return;
+  updateAdamAvatar();
+  updateParticles();
+  checkAdamStars();
+
+  drawAdamBackground();
+
+  // Stars
+  for (const s of adamStars) {
+    drawStarAt(s.wx - adamCamX, s.wy, 1.0, s);
+  }
+
+  // Avatar (world x → screen x)
+  drawAvatarAt(adamAv.x - adamCamX, adamAv.y, 1.0, adamAv.facingRight, adamAv.walkFrame, adamAv.bobOffset);
 
   drawParticles();
-  drawTitleAndScore();
 
-  requestAnimationFrame(gameLoop);
+  // Canvas HUD
+  ctx.save();
+  ctx.font = "bold " + Math.max(14, canvas.width * .022) + "px \"Comic Sans MS\",cursive";
+  ctx.fillStyle = "#d7a9f8"; ctx.shadowColor = "#000"; ctx.shadowBlur = 4;
+  ctx.fillText("🪐 Adam's Universe", 12, 28);
+  ctx.font = "bold " + Math.max(14, canvas.width * .024) + "px \"Comic Sans MS\",cursive";
+  ctx.fillStyle = "#ffe566"; ctx.textAlign = "right";
+  ctx.fillText("⭐ " + score, canvas.width - 12, 28);
+  ctx.restore();
+
+  requestAnimationFrame(adamLoop);
 }
+
+function startAdam() {
+  startScreen.style.display = "none";
+  score = 0; scoreDisplay.textContent = "⭐ 0";
+  recalcAdamWorld();
+  adamAv.x = Math.round(adamWorldW * .08);
+  adamAv.y = adamGroundY();
+  adamAv.vx = 0; adamAv.vy = 0; adamAv.onGround = true;
+  adamCamX = 0;
+  genAdamStars();
+  particles.length = 0;
+  gameRunning = true;
+  requestAnimationFrame(adamLoop);
+}
+
+/* ── Play button (dispatches to correct universe) ────────────────────────── */
+document.getElementById("playBtn").addEventListener("click", function () {
+  if (currentUniverse === "yuli") startYuli();
+  else if (currentUniverse === "adam") startAdam();
+});
+
 })();
 </script>
 </body>
